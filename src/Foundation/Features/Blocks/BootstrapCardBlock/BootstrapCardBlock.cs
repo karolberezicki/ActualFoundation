@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using Advanced.CMS.GroupingHeader;
 using EPiServer;
 using EPiServer.Core;
 using EPiServer.DataAbstraction;
@@ -23,7 +22,6 @@ namespace Foundation.Features.Blocks.BootstrapCardBlock
     [ImageUrl("/icons/cms/blocks/CMS-icon-block-03.png")]
     public class BootstrapCardBlock : FoundationBlockData, IDashboardItem
     {
-        [GroupingHeader("Card Alignment Options")]
         // Card alignment -- left/center/right
         [SelectOne(SelectionFactoryType = typeof(CardAlignmentSelectionFactory))]
         [Display(Name = "Card alignment",
@@ -31,7 +29,6 @@ namespace Foundation.Features.Blocks.BootstrapCardBlock
          GroupName = SystemTabNames.Content)]
         public virtual string CardAlignment { get; set; }
 
-        [GroupingHeader("Card Text and Content Properties")]
         [CultureSpecific]
         [Display(Name = "Card header",
          Order = 10)]
@@ -66,7 +63,6 @@ namespace Foundation.Features.Blocks.BootstrapCardBlock
          Order = 60)]
         public virtual string CardFooter { get; set; }
 
-        [GroupingHeader("Card Image Properties")]
         [CultureSpecific]
         [UIHint(UIHint.Image)]
         [Display(Name = "Card image (optional)",
@@ -74,7 +70,6 @@ namespace Foundation.Features.Blocks.BootstrapCardBlock
          GroupName = SystemTabNames.Content)]
         public virtual ContentReference CardImage { get; set; }
 
-        [GroupingHeader("Card Button and Link Properties")]
         [CultureSpecific]
         [Display(Name = "Card button text (button hidden if blank)",
          Description = "Text to show for card button -- button hidden if blank",
@@ -104,7 +99,6 @@ namespace Foundation.Features.Blocks.BootstrapCardBlock
         [MaxElements(3)]
         public virtual LinkItemCollection CardLinks { get; set; }
 
-        [GroupingHeader("Misc Properties")]
         [Display(Name = "CSS class",
          Description = "Custom CSS class for card (to help with custom styles)",
          Order = 200,

@@ -1,6 +1,3 @@
-﻿using Advanced.CMS.AdvancedReviews;
-using Advanced.CMS.BulkEdit;
-using Advanced.CMS.GroupingHeader;
 using EPiServer.Authorization;
 using EPiServer.Cms.TinyMce.SpellChecker;
 using EPiServer.ContentApi.Cms;
@@ -215,8 +212,6 @@ namespace Foundation
             //        options.JsonSerializerOptions.PropertyNamingPolicy = null;
             //    });
 
-            // Add AdvancedReviews
-            services.AddAdvancedReviews();
             services.AddGetaCategories();
             services.AddODPVisitorGroups();
 
@@ -247,11 +242,6 @@ namespace Foundation
             // Add ContentManager
             services.AddContentManager();
 
-            // Add GroupingHeader
-            // https://github.com/advanced-cms/grouping-header/
-            services.AddGroupingHeader();
-            // Bulk Edit add-on
-            services.AddBulkEdit();
 
             // Project Enhancements
             services.AddProjectEnhancements();
