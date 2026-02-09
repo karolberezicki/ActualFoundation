@@ -1,4 +1,5 @@
-﻿using EPiServer.Security;
+﻿#nullable enable
+using EPiServer.Security;
 using EPiServer.Shell;
 
 namespace Foundation.Infrastructure.Cms
@@ -6,33 +7,27 @@ namespace Foundation.Infrastructure.Cms
     [MenuProvider]
     public class CmsMenuProvider : IMenuProvider
     {
-        private const string MainMenuPath = MenuPaths.Global + "/extensions";
+        private const string _mainMenuPath = MenuPaths.Global + "/extensions";
 
         public IEnumerable<MenuItem> GetMenuItems()
         {
-            var menuItems = new List<MenuItem>();
-
-            menuItems.Add(new SectionMenuItem("Extensions", MainMenuPath)
+            var menuItems = new List<MenuItem>
             {
-                IsAvailable = (_) => PrincipalInfo.CurrentPrincipal.IsInRole("CommerceAdmins"),
-                SortIndex = 6000
-            });
-
-            menuItems.Add(new UrlMenuItem("Bulk Update", MainMenuPath + "/bulkupdate", "/episerver/foundation/bulkupdate")
-            {
-                SortIndex = 100,
-            });
-
-            menuItems.Add(new FoundationAdminMenuItem("Coupons", MainMenuPath + "/coupons", "/episerver/foundation/promotions")
-            {
-                SortIndex = 200,
-                Paths = new[] { "foundation/promotions", "foundation/editPromotionCoupons" }
-            });
-
-            menuItems.Add(new UrlMenuItem("Comments Manager", MainMenuPath + "/commentsmanager", "/episerver/foundation/moderation")
-            {
-                SortIndex = 200,
-            });
+                new SectionMenuItem("Extensions", _mainMenuPath)
+                {
+                    IsAvailable = _ => PrincipalInfo.CurrentPrincipal.IsInRole("CommerceAdmins"),
+                    SortIndex = 6000,
+                },
+                new UrlMenuItem("Bulk Update", _mainMenuPath + "/bulkupdate", "/episerver/foundation/bulkupdate")
+                {
+                    SortIndex = 100,
+                },
+                new FoundationAdminMenuItem("Coupons", _mainMenuPath + "/coupons", "/episerver/foundation/promotions")
+                {
+                    SortIndex = 200,
+                    Paths = ["foundation/promotions", "foundation/editPromotionCoupons"],
+                },
+            };
 
             return menuItems;
         }
@@ -40,17 +35,17 @@ namespace Foundation.Infrastructure.Cms
 
     public class FoundationAdminMenuItem : UrlMenuItem
     {
-        public IEnumerable<string> Paths { get; set; }
+        public IEnumerable<string> Paths { get; set; } = [];
 
         public FoundationAdminMenuItem(string text, string path, string url) : base(text, path, url)
         {
         }
 
-        public override bool IsSelected(HttpContext requestContext)
+        public override bool IsSelected(HttpContext? requestContext)
         {
             Validate.RequiredParameter("requestContext", requestContext);
-            var requestUrl = requestContext.Request != null ? requestContext.Request.Path.Value.Trim('/') : null;
-            return Paths.Any(x =>  requestUrl.Contains(x));
+            var requestUrl = requestContext?.Request.Path.Value?.Trim('/');
+            return Paths.Any(x =>  requestUrl?.Contains(x) ?? false);
         }
     }
 }
