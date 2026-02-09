@@ -1,5 +1,4 @@
-﻿using Infrastructure.Commerce.Extensions;
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 
 namespace Foundation.Infrastructure.Commerce.Extensions
 {

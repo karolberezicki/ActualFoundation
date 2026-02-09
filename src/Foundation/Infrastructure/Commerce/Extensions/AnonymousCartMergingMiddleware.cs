@@ -1,7 +1,8 @@
-﻿using Mediachase.Commerce.Anonymous;
+﻿#nullable enable
+using Mediachase.Commerce.Anonymous;
 using Mediachase.Commerce.Markets;
 
-namespace Infrastructure.Commerce.Extensions
+namespace Foundation.Infrastructure.Commerce.Extensions
 {
     public class AnonymousCartMergingMiddleware
     {
@@ -16,9 +17,9 @@ namespace Infrastructure.Commerce.Extensions
 
         public async Task InvokeAsync(HttpContext context)
         {
-            if (context.User.Identity != null && context.User.Identity.IsAuthenticated)
+            if (context.User.Identity is { IsAuthenticated: true })
             {
-                var anonymousId = context.Features.Get<IAnonymousIdFeature>().AnonymousId;
+                var anonymousId = context.Features.Get<IAnonymousIdFeature>()?.AnonymousId;
 
                 if (!string.IsNullOrWhiteSpace(anonymousId))
                 {
