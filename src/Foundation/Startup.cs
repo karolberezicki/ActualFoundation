@@ -7,11 +7,9 @@ using EPiServer.ContentDefinitionsApi;
 using EPiServer.ContentManagementApi;
 using EPiServer.Data;
 using EPiServer.Labs.ProjectEnhancements;
-using EPiServer.Marketing.Testing.Web.Initializers;
 using EPiServer.OpenIDConnect;
 using EPiServer.ServiceApi;
 using EPiServer.Shell.Modules;
-using EPiServer.Social.Framework;
 using Foundation.Features.Checkout.Payments;
 using Foundation.Infrastructure.Cms.ModelBinders;
 using Foundation.Infrastructure.Cms.Users;
@@ -30,9 +28,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
-using Optimizely.Labs.MarketingAutomationIntegration.ODP;
 using System.IO;
-using UNRVLD.ODP.VisitorGroups.Initilization;
 
 namespace Foundation
 {
@@ -86,7 +82,6 @@ namespace Foundation
 
             services.AddCommerce();
             //services.AddFind(); // Note: currently added via AddContentSearchApi()
-            services.AddSocialFramework();
             services.AddDisplay();
             services.TryAddEnumerable(Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Singleton(typeof(IFirstRequestInitializer), typeof(ContentInstaller)));
             services.AddDetection();
@@ -211,7 +206,6 @@ namespace Foundation
             //    });
 
             services.AddGetaCategories();
-            services.AddODPVisitorGroups();
 
             // Add Welcome DAM
             services.AddDAMUi();
@@ -229,13 +223,7 @@ namespace Foundation
                 o.ContentAssetsBasePath = ContentAssetsBasePath.ContentOwner;
             });
 
-            // Add ODP MA Connector (note: requires API key in appsettings.json)
-            services.AddMarketingAutomationIntegrationODP(_configuration);
             services.AddFormRepositoryWorkAround();
-
-            // Add A/B Testing Gadget
-            // https://github.com/episerver/content-ab-testing
-            services.AddABTesting(_configuration.GetConnectionString("EPiServerDB"));
 
             // Project Enhancements
             services.AddProjectEnhancements();

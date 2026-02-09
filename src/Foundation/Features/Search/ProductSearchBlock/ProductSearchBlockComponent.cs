@@ -6,7 +6,6 @@ using Foundation.Features.Blocks.ProductFilterBlocks;
 using Foundation.Features.CatalogContent;
 using Foundation.Infrastructure.Commerce.Models.EditorDescriptors;
 using Foundation.Infrastructure.Find.Facets;
-//using Foundation.Social.Services;
 using System.Configuration;
 
 namespace Foundation.Features.Search.ProductSearchBlock

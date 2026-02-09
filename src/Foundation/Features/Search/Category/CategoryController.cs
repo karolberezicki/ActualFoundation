@@ -1,7 +1,6 @@
 ﻿using Foundation.Features.CatalogContent;
 using Foundation.Infrastructure.Commerce.Customer.Services;
 using Foundation.Infrastructure.Personalization;
-//using Foundation.Social.Services;
 
 namespace Foundation.Features.Search.Category
 {
