@@ -6,7 +6,6 @@ using EPiServer.ContentApi.Commerce;
 using EPiServer.ContentDefinitionsApi;
 using EPiServer.ContentManagementApi;
 using EPiServer.Data;
-using EPiServer.Labs.ContentManager;
 using EPiServer.Labs.ProjectEnhancements;
 using EPiServer.Marketing.Testing.Web.Initializers;
 using EPiServer.OpenIDConnect;
@@ -238,9 +237,6 @@ namespace Foundation
             // Add A/B Testing Gadget
             // https://github.com/episerver/content-ab-testing
             services.AddABTesting(_configuration.GetConnectionString("EPiServerDB"));
-
-            // Add ContentManager
-            services.AddContentManager();
 
 
             // Project Enhancements

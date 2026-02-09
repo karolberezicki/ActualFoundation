@@ -5,7 +5,7 @@ using Foundation.Features.CatalogContent;
 namespace Foundation.Features.Search.Category
 {
     [CatalogContentType(DisplayName = "Generic Node", GUID = "4ac27ad4-bf60-4ea0-9a77-28a89d38d3fd", Description = "")]
-    public class GenericNode : NodeContent, IProductRecommendations, IFoundationContent/*, IDashboardItem*/
+    public class GenericNode : NodeContent, IProductRecommendations, IFoundationContent
     {
         [CultureSpecific]
         [Display(Name = "Long name", GroupName = SystemTabNames.Content, Order = 5)]
@@ -83,10 +83,5 @@ namespace Foundation.Features.Search.Category
             DefaultTemplate = "Grid";
         }
 
-        //public void SetItem(ItemModel itemModel)
-        //{
-        //    itemModel.Description = Teaser;
-        //    itemModel.Image = CommerceMediaCollection.FirstOrDefault()?.AssetLink;
-        //}
     }
 }

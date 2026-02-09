@@ -7,7 +7,7 @@ namespace Foundation.Features.Media
         GUID = "20644be7-3ca1-4f84-b893-ee021b73ce6c",
         Description = "Used for image file types such as jpg, jpeg, jpe, ico, gif, bmp, png")]
     [MediaDescriptor(ExtensionString = "jpg,jpeg,jpe,ico,gif,bmp,png")]
-    public class ImageMediaData : ImageData//, IDashboardItem
+    public class ImageMediaData : ImageData
     {
         [Editable(false)]
         [ImageDescriptor(Width = 256, Height = 256)]
@@ -124,10 +124,5 @@ namespace Foundation.Features.Media
             PaddingLeft = 0;
         }
 
-        //public void SetItem(ItemModel itemModel)
-        //{
-        //    itemModel.Description = Description;
-        //    itemModel.Image = ContentLink;
-        //}
     }
 }

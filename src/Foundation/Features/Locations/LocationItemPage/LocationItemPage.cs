@@ -76,10 +76,5 @@ namespace Foundation.Features.Locations.LocationItemPage
             return new List<string>();
         }
 
-        //public override void SetItem(ItemModel itemModel)
-        //{
-        //    itemModel.Description = MainIntro;
-        //    itemModel.Image = Image;
-        //}
     }
 }

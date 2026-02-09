@@ -7,7 +7,7 @@ namespace Foundation.Features.CatalogContent.Variation
 {
     [CatalogContentType(DisplayName = "Generic Variant", GUID = "1aaa2c58-c424-4c37-81b0-77e76d254eb0", Description = "Generic variant supports multiple variation types")]
     [ImageUrl("/icons/cms/pages/CMS-icon-page-23.png")]
-    public class GenericVariant : VariationContent, IProductRecommendations, IFoundationContent/*, IDashboardItem*/
+    public class GenericVariant : VariationContent, IProductRecommendations, IFoundationContent
     {
         [Tokenize]
         [Searchable]
@@ -121,10 +121,5 @@ namespace Foundation.Features.CatalogContent.Variation
             AssociationsTitle = "You May Also Like";
         }
 
-        //public void SetItem(ItemModel itemModel)
-        //{
-        //    itemModel.Description = Description?.ToHtmlString();
-        //    itemModel.Image = CommerceMediaCollection.FirstOrDefault()?.AssetLink;
-        //}
     }
 }

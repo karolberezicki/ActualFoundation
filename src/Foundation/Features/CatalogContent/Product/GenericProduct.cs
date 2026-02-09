@@ -10,7 +10,7 @@ namespace Foundation.Features.CatalogContent.Product
         DisplayName = "Generic Product",
         Description = "Generic product supports mutiple products")]
     [ImageUrl("/icons/cms/pages/CMS-icon-page-23.png")]
-    public class GenericProduct : ProductContent, IProductRecommendations, IFoundationContent/*, IDashboardItem*/
+    public class GenericProduct : ProductContent, IProductRecommendations, IFoundationContent
     {
         #region Content
         [Searchable]
@@ -188,10 +188,5 @@ namespace Foundation.Features.CatalogContent.Product
             Bury = false;
         }
 
-        //public void SetItem(ItemModel itemModel)
-        //{
-        //    itemModel.Description = Description?.ToHtmlString();
-        //    itemModel.Image = CommerceMediaCollection.FirstOrDefault()?.AssetLink;
-        //}
     }
 }

@@ -8,7 +8,7 @@ namespace Foundation.Features.Blocks.TeaserBlock
         GroupName = GroupNames.Content)]
     //[DefaultDisplayOption(ContentAreaTags.OneThirdWidth)]
     [ImageUrl("/icons/cms/blocks/CMS-icon-block-26.png")]
-    public class TeaserBlock : FoundationBlockData//, IDashboardItem
+    public class TeaserBlock : FoundationBlockData
     {
         #region Content
         [CultureSpecific]
@@ -126,10 +126,5 @@ namespace Foundation.Features.Blocks.TeaserBlock
             AlignButtonBottom = false;
         }
 
-        //public void SetItem(ItemModel itemModel)
-        //{
-        //    itemModel.Description = Heading;
-        //    itemModel.Image = Image;
-        //}
     }
 }

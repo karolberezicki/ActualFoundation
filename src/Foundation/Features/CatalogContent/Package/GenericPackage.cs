@@ -4,7 +4,7 @@ using EPiServer.SpecializedProperties;
 namespace Foundation.Features.CatalogContent.Package
 {
     [CatalogContentType(DisplayName = "Generic Package", GUID = "7b18ab7a-6344-4879-928e-e1b129d7379c", Description = "")]
-    public class GenericPackage : PackageContent, IProductRecommendations, IFoundationContent/*, IDashboardItem*/
+    public class GenericPackage : PackageContent, IProductRecommendations, IFoundationContent
     {
         [Searchable]
         [CultureSpecific]
@@ -77,10 +77,5 @@ namespace Foundation.Features.CatalogContent.Package
             AssociationsTitle = "You May Also Like";
         }
 
-        //public void SetItem(ItemModel itemModel)
-        //{
-        //    itemModel.Description = Description?.ToHtmlString();
-        //    itemModel.Image = CommerceMediaCollection.FirstOrDefault()?.AssetLink;
-        //}
     }
 }

@@ -1,5 +1,3 @@
-//using EPiServer.Labs.ContentManager.Cards;
-//using EPiServer.Labs.ContentManager.Dashboard;
 using EPiServer.SpecializedProperties;
 using Foundation.Features.Blocks.ButtonBlock;
 using Geta.Optimizely.Categories;
@@ -7,7 +5,7 @@ using Geta.Optimizely.Categories.DataAnnotations;
 
 namespace Foundation.Features.Shared
 {
-    public abstract class FoundationPageData : PageData, ICategorizableContent, IFoundationContent/*, IDashboardItem*/
+    public abstract class FoundationPageData : PageData, ICategorizableContent, IFoundationContent
     {
         #region Page Header
 
@@ -248,12 +246,6 @@ namespace Foundation.Features.Shared
         public virtual string Css { get; set; }
 
         #endregion
-
-        //public virtual void SetItem(ItemModel itemModel)
-        //{
-        //    itemModel.Description = PageDescription;
-        //    itemModel.Image = PageImage;
-        //}
 
         public override void SetDefaultValues(ContentType contentType)
         {

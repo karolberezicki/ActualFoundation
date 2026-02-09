@@ -52,9 +52,6 @@ namespace Foundation.Infrastructure.Commerce
         {
             //GlobalFilters.Filters.Add(new AJAXLocalizationFilterAttribute());
 
-            //var contentOptions = context.Locate.Advanced.GetInstance<ContentManagerOptions>();
-            //contentOptions.EnsureCommerceLoaded();
-
             var associationDefinitionRepository = context.Locate.Advanced.GetInstance<GroupDefinitionRepository<AssociationGroupDefinition>>();
             associationDefinitionRepository.Add(new AssociationGroupDefinition { Name = "Accessory" });
             associationDefinitionRepository.Add(new AssociationGroupDefinition { Name = "Part" });

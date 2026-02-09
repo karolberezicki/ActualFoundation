@@ -4,8 +4,6 @@ using EPiServer;
 using EPiServer.Core;
 using EPiServer.DataAbstraction;
 using EPiServer.DataAnnotations;
-using EPiServer.Labs.ContentManager.Cards;
-using EPiServer.Labs.ContentManager.Dashboard;
 using EPiServer.Shell.ObjectEditing;
 using EPiServer.SpecializedProperties;
 using EPiServer.Web;
@@ -20,7 +18,7 @@ namespace Foundation.Features.Blocks.BootstrapCardBlock
         Description = "Adds bootstrap card block to the page",
         GroupName = GroupNames.Content)]
     [ImageUrl("/icons/cms/blocks/CMS-icon-block-03.png")]
-    public class BootstrapCardBlock : FoundationBlockData, IDashboardItem
+    public class BootstrapCardBlock : FoundationBlockData
     {
         // Card alignment -- left/center/right
         [SelectOne(SelectionFactoryType = typeof(CardAlignmentSelectionFactory))]
@@ -104,12 +102,6 @@ namespace Foundation.Features.Blocks.BootstrapCardBlock
          Order = 200,
          GroupName = SystemTabNames.Content)]
         public virtual string CssClass { get; set; }
-
-        public void SetItem(ItemModel itemModel)
-        {
-            itemModel.Description = CardTitle;
-            itemModel.Image = CardImage;
-        }
 
         public override void SetDefaultValues(ContentType contentType)
         {

@@ -5,7 +5,7 @@ namespace Foundation.Features.Blocks.HeroBlock
         Description = "Image block with overlay for text",
         GroupName = GroupNames.Content)]
     [ImageUrl("/icons/cms/blocks/CMS-icon-block-22.png")]
-    public class HeroBlock : FoundationBlockData//, IDashboardItem
+    public class HeroBlock : FoundationBlockData
     {
         [SelectOne(SelectionFactoryType = typeof(BlockRatioSelectionFactory))]
         [Display(Name = "Block ratio (width:height)", Order = 5)]
@@ -35,11 +35,6 @@ namespace Foundation.Features.Blocks.HeroBlock
             BlockRatio = "2:1";
         }
 
-        //public void SetItem(ItemModel itemModel)
-        //{
-        //    itemModel.Description = Callout?.CalloutContent.ToHtmlString();
-        //    itemModel.Image = BackgroundImage;
-        //}
     }
 
     [ContentType(DisplayName = "Hero Block Callout", GUID = "7A3C9E9E-8612-4722-B795-2A93CB54A476", AvailableInEditMode = false)]
