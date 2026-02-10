@@ -1,13 +1,6 @@
 ﻿using EPiServer.Cms.TinyMce.Core;
-using EPiServer.ServiceLocation;
 using Microsoft.Extensions.DependencyInjection;
-using Foundation.Features.Settings;
 using Foundation.Infrastructure.Cms.Settings;
-using System;
-using System.Collections.Generic;
-using EPiServer.Core;
-using EPiServer;
-using System.Linq;
 
 namespace Foundation.Infrastructure.Cms.Extensions
 {
@@ -15,8 +8,6 @@ namespace Foundation.Infrastructure.Cms.Extensions
     {
         private static readonly Lazy<ISettingsService> _settingsService =
             new Lazy<ISettingsService>(() => ServiceLocator.Current.GetInstance<ISettingsService>());
-
-        private static readonly IContentLoader _contentLoader;
 
         public static void AddTinyMceConfiguration(this IServiceCollection services)
         {
