@@ -1,4 +1,5 @@
-﻿using EPiServer.Core.Html;
+﻿using EPiServer.Find.Helpers.Text;
+using Foundation.Infrastructure.Cms.Extensions;
 using Geta.Optimizely.Categories;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -45,7 +46,7 @@ namespace Foundation.Features.Category
             regexPattern.Append(@"""[\s\W\w]*?</span>");
             previewText = Regex.Replace(previewText, regexPattern.ToString(), string.Empty, RegexOptions.IgnoreCase | RegexOptions.Multiline);
 
-            return TextIndexer.StripHtml(previewText, 200);
+            return previewText.StripHtml().Truncate(200);
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿@using EPiServer.Core.Html
+﻿@using EPiServer.Find.Helpers.Text
+@using Foundation.Infrastructure.Cms.Extensions
 @using EPiServer.Web.Mvc.Html
 @using Foundation.Features.Blocks.PageListBlock
 @using Foundation.Features.Shared.SelectionFactories
@@ -36,7 +37,7 @@
         <div class="page-list-block__title-container">
             <div class="page-list-block__title-wrapper">
                 <h2 class="page-list-block__title">
-                    @(@Html.Raw(TextIndexer.StripHtml(page != null ? page.MetaTitle : Model.Page.Name, titleLength)) + "...")
+                    @(@Html.Raw((page != null ? page.MetaTitle : Model.Page.Name)?.StripHtml().Truncate(titleLength)) + "...")
                 </h2>
                 @if (Model.ShowPublishDate)
                 {
@@ -44,7 +45,7 @@
                 }
                 @if (page != null && Model.ShowIntroduction)
                 {
-                    <p>@Html.Raw(TextIndexer.StripHtml(page.TeaserText, previewTextLength))</p>
+                    <p>@Html.Raw(page.TeaserText?.StripHtml().Truncate(previewTextLength))</p>
                 }
             </div>
         </div>

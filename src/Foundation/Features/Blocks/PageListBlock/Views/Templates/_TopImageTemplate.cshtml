@@ -1,5 +1,6 @@
 ﻿@model PageListBlockViewModel
-@using EPiServer.Core.Html
+@using EPiServer.Find.Helpers.Text
+@using Foundation.Infrastructure.Cms.Extensions
 @using Foundation.Features.Blocks.PageListBlock
 @using Foundation.Features.Shared.SelectionFactories
 
@@ -32,12 +33,12 @@
                         <p class="sub-title">@pageModel.Page.StartPublish.Value.ToString("dd MMM yyyy")</p>
                     }
                     <h4>
-                        @(@Html.Raw(TextIndexer.StripHtml(pageModel != null ? foundationPage.MetaTitle : pageModel.Page.Name, 55)) + "...")
+                        @(@Html.Raw((pageModel != null ? foundationPage.MetaTitle : pageModel.Page.Name)?.StripHtml().Truncate(55)) + "...")
                     </h4>
 
                     @if (pageModel != null && pageModel.ShowIntroduction)
                     {
-                        <p class="light-text">@Html.Raw(TextIndexer.StripHtml(foundationPage.TeaserText, 200))</p>
+                        <p class="light-text">@Html.Raw(foundationPage.TeaserText?.StripHtml().Truncate(200))</p>
                     }
                 </div>
             </a>

@@ -1,5 +1,6 @@
 ﻿@model PageListBlockViewModel
-@using EPiServer.Core.Html
+@using EPiServer.Find.Helpers.Text
+@using Foundation.Infrastructure.Cms.Extensions
 @using Foundation.Features.Blocks.PageListBlock
 @using Foundation.Features.Shared.SelectionFactories
 
@@ -20,10 +21,10 @@
 			                <img class="card-img-top" src="@Url.ContentUrl(foundationPage.PageImage)" alt="@foundationPage.MetaTitle" />
                         </div>
 	                    <div class="card-body">		
-					        <h5 class="card-title">@(@Html.Raw(TextIndexer.StripHtml(pageModel != null ? foundationPage.MetaTitle : pageModel.Page.Name, 40)) + "...")</h5>
+					        <h5 class="card-title">@(@Html.Raw((pageModel != null ? foundationPage.MetaTitle : pageModel.Page.Name)?.StripHtml().Truncate(40)) + "...")</h5>
                             @if(Model.ShowIntroduction) {
                                     <div class="card-text">
-                                        <p>@Html.Raw(TextIndexer.StripHtml(foundationPage.TeaserText, 200))</p>
+                                        <p>@Html.Raw(foundationPage.TeaserText?.StripHtml().Truncate(200))</p>
                                     </div>
                             }
                             <a class="btn-none stretched-link" href="@pageModel.Page.ContentLink.GetPublicUrl()"></a>

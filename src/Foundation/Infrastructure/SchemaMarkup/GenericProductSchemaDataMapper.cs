@@ -1,4 +1,5 @@
 ﻿using Foundation.Features.CatalogContent.Product;
+using EPiServer.Find.Helpers.Text;
 using Foundation.Infrastructure.Cms;
 using Schema.NET;
 
@@ -69,7 +70,7 @@ namespace Foundation.Infrastructure.SchemaMarkup
             {
                 Name = content.DisplayName,
                 Image = content.CommerceMediaCollection?.Select(x => x.AssetLink.GetUri(content.Language.Name, true)).ToList(),
-                Description = EPiServer.Core.Html.TextIndexer.StripHtml(content.LongDescription?.ToHtmlString(), int.MaxValue),
+                Description = content.LongDescription?.ToHtmlString()?.StripHtml(),
                 Sku = variants.Select(x => x.Code).ToList(),
                 Brand = new Brand
                 {

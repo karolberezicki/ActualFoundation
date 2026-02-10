@@ -1,5 +1,6 @@
 ﻿using EPiServer.Cms.Shell;
-using EPiServer.Core.Html;
+using EPiServer.Find.Helpers.Text;
+using Foundation.Infrastructure.Cms.Extensions;
 using EPiServer.Filters;
 using Foundation.Features.Blog.BlogItemPage;
 using Foundation.Features.Category;
@@ -188,7 +189,7 @@ namespace Foundation.Features.Blog.BlogListPage
             regexPattern.Append(@"""[\s\W\w]*?</span>");
             previewText = Regex.Replace(previewText, regexPattern.ToString(), string.Empty, RegexOptions.IgnoreCase | RegexOptions.Multiline);
 
-            return TextIndexer.StripHtml(previewText, PreviewTextLength);
+            return previewText.StripHtml().Truncate(PreviewTextLength);
         }
 
         private IEnumerable<PageData> FindPages(BlogListPage currentPage, IContent category)
