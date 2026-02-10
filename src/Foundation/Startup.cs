@@ -91,6 +91,7 @@ namespace Foundation
             //site specific
             services.AddEmbeddedLocalization<Startup>();
             services.Configure<OrderOptions>(o => o.DisableOrderDataLocalization = true);
+            services.Configure<Features.Ucp.UcpConfiguration>(_configuration.GetSection("Ucp"));
 
             services.ConfigureContentApiOptions(o =>
             {
