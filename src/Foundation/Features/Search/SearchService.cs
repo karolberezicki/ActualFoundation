@@ -950,7 +950,7 @@ namespace Foundation.Features.Search
             var index = 0;
             foreach (var item in node.FeaturedProducts.FilteredItems)
             {
-                var content = item.GetContent();
+                var content = item.LoadContent();
                 if (content is EntryContentBase featuredEntry)
                 {
                     if (productViewModels.Any(x => x.Code.Equals(featuredEntry.Code)))
@@ -967,7 +967,7 @@ namespace Foundation.Features.Search
                 }
                 else if (content is GenericNode featuredNode)
                 {
-                    foreach (var nodeEntry in _contentLoader.GetChildren<EntryContentBase>(content.ContentLink)
+                    foreach (var nodeEntry in _contentLoader.GetChildren<EntryContentBase>(featuredNode.ContentLink)
                         .Where(x => !(x is VariationContent))
                         .Take(featuredNode.PartialPageSize))
                     {

@@ -110,7 +110,7 @@ namespace Foundation.Features.Search.ProductSearchBlock
             var products = new List<EntryContentBase>();
             if (currentContent != null)
             {
-                products = currentContent.PriorityProducts?.FilteredItems?.Select(x => x.GetContent() as EntryContentBase).ToList() ?? new List<EntryContentBase>();
+                products = currentContent.PriorityProducts?.FilteredItems?.Select(x => x.LoadContent() as EntryContentBase).ToList() ?? new List<EntryContentBase>();
             }
 
             products = products.Where(x => !result.ProductViewModels.Any(y => y.Code.Equals(x.Code)))
@@ -220,7 +220,7 @@ namespace Foundation.Features.Search.ProductSearchBlock
             var filters = new List<EPiServer.Find.Api.Querying.Filter>();
             if (productSearchBlock.Nodes?.FilteredItems != null && productSearchBlock.Nodes.FilteredItems.Any())
             {
-                var nodes = productSearchBlock.Nodes.FilteredItems.Select(x => x.GetContent()).OfType<NodeContent>().ToList();
+                var nodes = productSearchBlock.Nodes.FilteredItems.Select(x => x.LoadContent()).OfType<NodeContent>().ToList();
                 var outlines = nodes.Select(x => _searchService.GetOutline(x.Code)).ToList();
                 var outlineFilters = outlines.Select(s => new PrefixFilter("Outline$$string.lowercase", s.ToLowerInvariant()))
                     .ToList();
@@ -267,7 +267,7 @@ namespace Foundation.Features.Search.ProductSearchBlock
             }
             foreach (var item in productSearchBlock.Filters.FilteredItems)
             {
-                if (item.GetContent() is FilterBaseBlock filter)
+                if (item.LoadContent() is FilterBaseBlock filter)
                 {
                     filters.Add(filter.GetFilter());
                 }
