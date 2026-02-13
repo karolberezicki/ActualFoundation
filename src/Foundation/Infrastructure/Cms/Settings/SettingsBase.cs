@@ -1,6 +1,3 @@
-﻿namespace Foundation.Infrastructure.Cms.Settings
-{
-    public abstract class SettingsBase : StandardContentBase
-    {
-    }
-}
+﻿namespace Foundation.Infrastructure.Cms.Settings;
+
+public abstract class SettingsBase : StandardContentBase;

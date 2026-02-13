@@ -1,9 +1,8 @@
-﻿namespace Foundation.Features.Stores
-{
-    public class StorePageViewModel : ContentViewModel<StorePage>
-    {
-        public StoreViewModel StoreViewModel { get; set; }
+﻿namespace Foundation.Features.Stores;
 
-        public StorePageViewModel(StorePage currentPage) : base(currentPage) { }
-    }
+public class StorePageViewModel : ContentViewModel<StorePage>
+{
+    public StoreViewModel StoreViewModel { get; set; }
+
+    public StorePageViewModel(StorePage currentPage) : base(currentPage) { }
 }

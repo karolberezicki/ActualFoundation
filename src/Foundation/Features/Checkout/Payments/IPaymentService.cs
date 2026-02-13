@@ -1,9 +1,8 @@
 using Foundation.Features.Checkout.ViewModels;
 
-namespace Foundation.Features.Checkout.Payments
+namespace Foundation.Features.Checkout.Payments;
+
+public interface IPaymentService
 {
-    public interface IPaymentService
-    {
-        IEnumerable<PaymentMethodViewModel> GetPaymentMethodsByMarketIdAndLanguageCode(string marketId, string languageCode);
-    }
+    IEnumerable<PaymentMethodViewModel> GetPaymentMethodsByMarketIdAndLanguageCode(string marketId, string languageCode);
 }

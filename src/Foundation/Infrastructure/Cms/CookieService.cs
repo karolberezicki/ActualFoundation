@@ -1,69 +1,68 @@
-﻿namespace Foundation.Infrastructure.Cms
+﻿namespace Foundation.Infrastructure.Cms;
+
+public interface ICookieService
 {
-    public interface ICookieService
+    string Get(string cookie);
+
+    void Set(string cookie, string value, bool sessionCookie = false);
+
+    void Remove(string cookie);
+}
+
+public class CookieService : ICookieService
+{
+    private IHttpContextAccessor _httpContextAccessor;
+
+    public CookieService(IHttpContextAccessor httpContextAccessor)
     {
-        string Get(string cookie);
-
-        void Set(string cookie, string value, bool sessionCookie = false);
-
-        void Remove(string cookie);
+        _httpContextAccessor = httpContextAccessor;
     }
 
-    public class CookieService : ICookieService
+    public virtual string Get(string cookie)
     {
-        private IHttpContextAccessor _httpContextAccessor;
-
-        public CookieService(IHttpContextAccessor httpContextAccessor)
+        if (_httpContextAccessor.HttpContext == null)
         {
-            _httpContextAccessor = httpContextAccessor;
+            return null;
         }
 
-        public virtual string Get(string cookie)
-        {
-            if (_httpContextAccessor.HttpContext == null)
-            {
-                return null;
-            }
+        return _httpContextAccessor.HttpContext.Request.Cookies[cookie];
+    }
 
-            return _httpContextAccessor.HttpContext.Request.Cookies[cookie];
+    public virtual void Set(string cookie, string value, bool sessionCookie = false)
+    {
+        if (_httpContextAccessor.HttpContext == null)
+        {
+            return;
         }
 
-        public virtual void Set(string cookie, string value, bool sessionCookie = false)
+        var options = new CookieOptions()
         {
-            if (_httpContextAccessor.HttpContext == null)
-            {
-                return;
-            }
+            HttpOnly = true,
+            Secure = _httpContextAccessor.HttpContext.Request.IsHttps
+        };
 
-            var options = new CookieOptions()
-            {
-                HttpOnly = true,
-                Secure = _httpContextAccessor.HttpContext.Request.IsHttps
-            };
-
-            if (!sessionCookie)
-            {
-                options.Expires = DateTime.Now.AddYears(1);
-            }
-
-            _httpContextAccessor.HttpContext.Response.Cookies.Append(cookie, value, options);
+        if (!sessionCookie)
+        {
+            options.Expires = DateTime.Now.AddYears(1);
         }
 
-        public virtual void Remove(string cookie)
+        _httpContextAccessor.HttpContext.Response.Cookies.Append(cookie, value, options);
+    }
+
+    public virtual void Remove(string cookie)
+    {
+        if (_httpContextAccessor.HttpContext == null)
         {
-            if (_httpContextAccessor.HttpContext == null)
-            {
-                return;
-            }
-
-            var options = new CookieOptions()
-            {
-                HttpOnly = true,
-                Secure = _httpContextAccessor.HttpContext.Request.IsHttps,
-                Expires = DateTime.Now.AddDays(-1),
-            };
-
-            _httpContextAccessor.HttpContext.Response.Cookies.Append(cookie, "", options);
+            return;
         }
+
+        var options = new CookieOptions()
+        {
+            HttpOnly = true,
+            Secure = _httpContextAccessor.HttpContext.Request.IsHttps,
+            Expires = DateTime.Now.AddDays(-1),
+        };
+
+        _httpContextAccessor.HttpContext.Response.Cookies.Append(cookie, "", options);
     }
 }

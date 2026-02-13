@@ -1,31 +1,30 @@
-namespace Foundation.Features.Locations.LocationItemPage
+namespace Foundation.Features.Locations.LocationItemPage;
+
+public class LocationItemViewModel : ContentViewModel<LocationItemPage>
 {
-    public class LocationItemViewModel : ContentViewModel<LocationItemPage>
+    public LocationItemViewModel(LocationItemPage currentPage) : base(currentPage)
     {
-        public LocationItemViewModel(LocationItemPage currentPage) : base(currentPage)
+        LocationNavigation = new LocationNavigationModel
         {
-            LocationNavigation = new LocationNavigationModel
-            {
-                CurrentLocation = currentPage
-            };
-        }
-
-        public ImageData Image { get; set; }
-        public LocationNavigationModel LocationNavigation { get; set; }
-        public IEnumerable<LocationItemPage> SimilarLocations { get; set; }
-        //public IEnumerable<StandardCategory> Tags { get; set; }
+            CurrentLocation = currentPage
+        };
     }
 
-    public class LocationNavigationModel
-    {
-        public LocationNavigationModel()
-        {
-            CloseBy = Enumerable.Empty<LocationItemPage>();
-            ContinentLocations = Enumerable.Empty<LocationItemPage>();
-        }
+    public ImageData Image { get; set; }
+    public LocationNavigationModel LocationNavigation { get; set; }
+    public IEnumerable<LocationItemPage> SimilarLocations { get; set; }
+    //public IEnumerable<StandardCategory> Tags { get; set; }
+}
 
-        public IEnumerable<LocationItemPage> CloseBy { get; set; }
-        public IEnumerable<LocationItemPage> ContinentLocations { get; set; }
-        public LocationItemPage CurrentLocation { get; set; }
+public class LocationNavigationModel
+{
+    public LocationNavigationModel()
+    {
+        CloseBy = Enumerable.Empty<LocationItemPage>();
+        ContinentLocations = Enumerable.Empty<LocationItemPage>();
     }
+
+    public IEnumerable<LocationItemPage> CloseBy { get; set; }
+    public IEnumerable<LocationItemPage> ContinentLocations { get; set; }
+    public LocationItemPage CurrentLocation { get; set; }
 }

@@ -1,30 +1,29 @@
 ﻿using EPiServer.Logging;
 using Mediachase.Commerce.Shared;
 
-namespace Foundation.Infrastructure.Commerce.Install
+namespace Foundation.Infrastructure.Commerce.Install;
+
+public class InstallProgressMessenger : IProgressMessenger
 {
-    public class InstallProgressMessenger : IProgressMessenger
+    private static readonly ILogger _log = LogManager.GetLogger(typeof(InstallProgressMessenger));
+
+    public int CurrentPercentage { get; private set; }
+    public IList<InstallMessage> Messages { get; }
+
+    public InstallProgressMessenger() => Messages = new List<InstallMessage>();
+
+    public void AddProgressMessageText(string message, bool error, int percent)
     {
-        private static readonly ILogger _log = LogManager.GetLogger(typeof(InstallProgressMessenger));
+        CurrentPercentage = percent > 0 ? percent : CurrentPercentage;
+        Messages.Insert(0, new InstallMessage { TimeStamp = DateTime.Now, Message = message, Error = error });
 
-        public int CurrentPercentage { get; private set; }
-        public IList<InstallMessage> Messages { get; }
-
-        public InstallProgressMessenger() => Messages = new List<InstallMessage>();
-
-        public void AddProgressMessageText(string message, bool error, int percent)
+        if (error)
         {
-            CurrentPercentage = percent > 0 ? percent : CurrentPercentage;
-            Messages.Insert(0, new InstallMessage { TimeStamp = DateTime.Now, Message = message, Error = error });
-
-            if (error)
-            {
-                _log.Error(message);
-            }
-            else
-            {
-                _log.Debug(message);
-            }
+            _log.Error(message);
+        }
+        else
+        {
+            _log.Debug(message);
         }
     }
 }

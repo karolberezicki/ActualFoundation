@@ -1,7 +1,6 @@
-namespace Foundation.Infrastructure.Find.Facets
+namespace Foundation.Infrastructure.Find.Facets;
+
+public interface ISelectable
 {
-    public interface ISelectable
-    {
-        bool Selected { get; set; }
-    }
+    bool Selected { get; set; }
 }

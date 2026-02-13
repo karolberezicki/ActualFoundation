@@ -1,38 +1,37 @@
-﻿namespace Foundation.Infrastructure.Find.Facets.Config
+﻿namespace Foundation.Infrastructure.Find.Facets.Config;
+
+public class EnumSelectionFactory<TEnum> : ISelectionFactory where TEnum : struct, IConvertible
 {
-    public class EnumSelectionFactory<TEnum> : ISelectionFactory where TEnum : struct, IConvertible
+    private static Type _descriptionType = typeof(EnumSelectionDescriptionAttribute);
+
+    public IEnumerable<ISelectItem> GetSelections(ExtendedMetadata metadata)
     {
-        private static Type _descriptionType = typeof(EnumSelectionDescriptionAttribute);
+        var type = typeof(TEnum);
 
-        public IEnumerable<ISelectItem> GetSelections(ExtendedMetadata metadata)
+        var values = Enum.GetValues(type);
+
+        foreach (var value in values)
         {
-            var type = typeof(TEnum);
+            var description = GetDescription(type, value);
 
-            var values = Enum.GetValues(type);
-
-            foreach (var value in values)
+            yield return new SelectItem
             {
-                var description = GetDescription(type, value);
-
-                yield return new SelectItem
-                {
-                    Text = description?.Text ?? EnumHelpers.GetValueName<TEnum>(value),
-                    Value = description?.Value ?? value
-                };
-            }
+                Text = description?.Text ?? EnumHelpers.GetValueName<TEnum>(value),
+                Value = description?.Value ?? value
+            };
         }
+    }
 
-        private static EnumSelectionDescriptionAttribute GetDescription(Type type, object value)
-        {
-            var enumName = type.GetEnumName(value);
-            var member = type.GetMember(enumName).FirstOrDefault();
+    private static EnumSelectionDescriptionAttribute GetDescription(Type type, object value)
+    {
+        var enumName = type.GetEnumName(value);
+        var member = type.GetMember(enumName).FirstOrDefault();
 
-            if (object.Equals(member, null))
-                return null;
+        if (object.Equals(member, null))
+            return null;
 
-            return member
-                .GetCustomAttributes(_descriptionType, false)
-                .FirstOrDefault() as EnumSelectionDescriptionAttribute;
-        }
+        return member
+            .GetCustomAttributes(_descriptionType, false)
+            .FirstOrDefault() as EnumSelectionDescriptionAttribute;
     }
 }

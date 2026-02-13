@@ -1,7 +1,6 @@
-﻿namespace Foundation.Features.Events.CalendarBlock
+﻿namespace Foundation.Features.Events.CalendarBlock;
+
+public class CalendarBlockData
 {
-    public class CalendarBlockData
-    {
-        public int BlockId { get; set; }
-    }
+    public int BlockId { get; set; }
 }

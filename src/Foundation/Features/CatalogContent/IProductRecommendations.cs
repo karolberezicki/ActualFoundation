@@ -1,7 +1,6 @@
-namespace Foundation.Features.CatalogContent
+namespace Foundation.Features.CatalogContent;
+
+public interface IProductRecommendations
 {
-    public interface IProductRecommendations
-    {
-        bool ShowRecommendations { get; set; }
-    }
+    bool ShowRecommendations { get; set; }
 }

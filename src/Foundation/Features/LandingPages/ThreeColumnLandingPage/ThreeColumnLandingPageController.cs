@@ -1,11 +1,10 @@
-namespace Foundation.Features.LandingPages.ThreeColumnLandingPage
+namespace Foundation.Features.LandingPages.ThreeColumnLandingPage;
+
+public class ThreeColumnLandingPageController : PageController<ThreeColumnLandingPage>
 {
-    public class ThreeColumnLandingPageController : PageController<ThreeColumnLandingPage>
+    public ActionResult Index(ThreeColumnLandingPage currentPage)
     {
-        public ActionResult Index(ThreeColumnLandingPage currentPage)
-        {
-            var model = ContentViewModel.Create(currentPage);
-            return View(model);
-        }
+        var model = ContentViewModel.Create(currentPage);
+        return View(model);
     }
 }

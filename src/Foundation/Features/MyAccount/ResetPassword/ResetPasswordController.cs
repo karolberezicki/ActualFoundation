@@ -5,122 +5,121 @@ using Foundation.Infrastructure.Cms.Users;
 using Foundation.Infrastructure.Commerce.Customer.Services;
 using System.Web;
 
-namespace Foundation.Features.MyAccount.ResetPassword
+namespace Foundation.Features.MyAccount.ResetPassword;
+
+public class ResetPasswordController : IdentityControllerBase<ResetPasswordPage>
 {
-    public class ResetPasswordController : IdentityControllerBase<ResetPasswordPage>
+    private readonly IContentLoader _contentLoader;
+    private readonly IMailService _mailService;
+    private readonly LocalizationService _localizationService;
+    private readonly ISettingsService _settingsService;
+
+    public ResetPasswordController(ApplicationSignInManager<SiteUser> signinManager,
+        ApplicationUserManager<SiteUser> userManager,
+        ICustomerService customerService,
+        IContentLoader contentLoader,
+        IMailService mailService,
+        LocalizationService localizationService,
+        ISettingsService settingsService)
+
+        : base(signinManager, userManager, customerService)
     {
-        private readonly IContentLoader _contentLoader;
-        private readonly IMailService _mailService;
-        private readonly LocalizationService _localizationService;
-        private readonly ISettingsService _settingsService;
+        _contentLoader = contentLoader;
+        _mailService = mailService;
+        _localizationService = localizationService;
+        _settingsService = settingsService;
+    }
 
-        public ResetPasswordController(ApplicationSignInManager<SiteUser> signinManager,
-            ApplicationUserManager<SiteUser> userManager,
-            ICustomerService customerService,
-            IContentLoader contentLoader,
-            IMailService mailService,
-            LocalizationService localizationService,
-            ISettingsService settingsService)
+    [AllowAnonymous]
+    public ActionResult Index(ResetPasswordPage currentPage)
+    {
+        var viewModel = new ForgotPasswordViewModel(currentPage);
+        return View("ForgotPassword", viewModel);
+    }
 
-            : base(signinManager, userManager, customerService)
+    [HttpPost]
+    [AllowAnonymous]
+    [ValidateAntiForgeryToken]
+    public async Task<ActionResult> ForgotPassword(ForgotPasswordViewModel model, string language)
+    {
+        if (!ModelState.IsValid)
         {
-            _contentLoader = contentLoader;
-            _mailService = mailService;
-            _localizationService = localizationService;
-            _settingsService = settingsService;
+            return View(model);
         }
 
-        [AllowAnonymous]
-        public ActionResult Index(ResetPasswordPage currentPage)
+        var user = await UserManager.FindByNameAsync(model.Email);
+        if (user == null)
         {
-            var viewModel = new ForgotPasswordViewModel(currentPage);
-            return View("ForgotPassword", viewModel);
-        }
-
-        [HttpPost]
-        [AllowAnonymous]
-        [ValidateAntiForgeryToken]
-        public async Task<ActionResult> ForgotPassword(ForgotPasswordViewModel model, string language)
-        {
-            if (!ModelState.IsValid)
-            {
-                return View(model);
-            }
-
-            var user = await UserManager.FindByNameAsync(model.Email);
-            if (user == null)
-            {
-                // Don't reveal that the user does not exist or is not confirmed
-                return RedirectToAction("ForgotPasswordConfirmation");
-            }
-
-            var referencePages = _settingsService.GetSiteSettings<ReferencePageSettings>();
-            //var body = _mailService.GetHtmlBodyForMail(startPage.ResetPasswordMail, new NameValueCollection(), language);
-            var mailPage = _contentLoader.Get<MailBasePage>(referencePages.ResetPasswordMail);
-            var body = mailPage.MainBody.ToHtmlString();
-            var code = await UserManager.GeneratePasswordResetTokenAsync(user);
-            var url = Url.Action("ResetPassword", "ResetPassword", new { userId = user.Id, code = HttpUtility.UrlEncode(code), language }, Request.Scheme);
-
-            body = body.Replace("[MailUrl]",
-                string.Format("{0}<a href=\"{1}\">{2}</a>", _localizationService.GetString("/ResetPassword/Mail/Text"), url, _localizationService.GetString("/ResetPassword/Mail/Link"))
-            );
-
-            _mailService.Send(mailPage.Subject, body, user.Email);
-
+            // Don't reveal that the user does not exist or is not confirmed
             return RedirectToAction("ForgotPasswordConfirmation");
         }
 
-        [AllowAnonymous]
-        public ActionResult ForgotPasswordConfirmation()
+        var referencePages = _settingsService.GetSiteSettings<ReferencePageSettings>();
+        //var body = _mailService.GetHtmlBodyForMail(startPage.ResetPasswordMail, new NameValueCollection(), language);
+        var mailPage = _contentLoader.Get<MailBasePage>(referencePages.ResetPasswordMail);
+        var body = mailPage.MainBody.ToHtmlString();
+        var code = await UserManager.GeneratePasswordResetTokenAsync(user);
+        var url = Url.Action("ResetPassword", "ResetPassword", new { userId = user.Id, code = HttpUtility.UrlEncode(code), language }, Request.Scheme);
+
+        body = body.Replace("[MailUrl]",
+            string.Format("{0}<a href=\"{1}\">{2}</a>", _localizationService.GetString("/ResetPassword/Mail/Text"), url, _localizationService.GetString("/ResetPassword/Mail/Link"))
+        );
+
+        _mailService.Send(mailPage.Subject, body, user.Email);
+
+        return RedirectToAction("ForgotPasswordConfirmation");
+    }
+
+    [AllowAnonymous]
+    public ActionResult ForgotPasswordConfirmation()
+    {
+        var homePage = _contentLoader.Get<PageData>(ContentReference.StartPage) as HomePage;
+        var model = ContentViewModel.Create(homePage);
+        return View("ForgotPasswordConfirmation", model);
+    }
+
+    [AllowAnonymous]
+    public ActionResult ResetPassword(ResetPasswordPage currentPage, string code)
+    {
+        var viewModel = new ResetPasswordViewModel(currentPage) { Code = code };
+        return code == null ? View("Error") : View("ResetPassword", viewModel);
+    }
+
+    [HttpPost]
+    [AllowDBWrite]
+    [AllowAnonymous]
+    [ValidateAntiForgeryToken]
+    public async Task<ActionResult> ResetPassword(ResetPasswordViewModel model)
+    {
+        if (!ModelState.IsValid)
         {
-            var homePage = _contentLoader.Get<PageData>(ContentReference.StartPage) as HomePage;
-            var model = ContentViewModel.Create(homePage);
-            return View("ForgotPasswordConfirmation", model);
+            return View(model);
         }
 
-        [AllowAnonymous]
-        public ActionResult ResetPassword(ResetPasswordPage currentPage, string code)
+        var user = await UserManager.FindByNameAsync(model.Email);
+        if (user == null)
         {
-            var viewModel = new ResetPasswordViewModel(currentPage) { Code = code };
-            return code == null ? View("Error") : View("ResetPassword", viewModel);
+            // Don't reveal that the user does not exist
+            return RedirectToAction("ResetPasswordConfirmation");
         }
 
-        [HttpPost]
-        [AllowDBWrite]
-        [AllowAnonymous]
-        [ValidateAntiForgeryToken]
-        public async Task<ActionResult> ResetPassword(ResetPasswordViewModel model)
+        var result = await UserManager.ResetPasswordAsync(user, HttpUtility.UrlDecode(model.Code), model.Password);
+
+        if (result.Succeeded)
         {
-            if (!ModelState.IsValid)
-            {
-                return View(model);
-            }
-
-            var user = await UserManager.FindByNameAsync(model.Email);
-            if (user == null)
-            {
-                // Don't reveal that the user does not exist
-                return RedirectToAction("ResetPasswordConfirmation");
-            }
-
-            var result = await UserManager.ResetPasswordAsync(user, HttpUtility.UrlDecode(model.Code), model.Password);
-
-            if (result.Succeeded)
-            {
-                return RedirectToAction("ResetPasswordConfirmation");
-            }
-
-            AddErrors(result.Errors.Select(x => x.Code));
-
-            return View();
+            return RedirectToAction("ResetPasswordConfirmation");
         }
 
-        [AllowAnonymous]
-        public ActionResult ResetPasswordConfirmation()
-        {
-            var homePage = _contentLoader.Get<PageData>(ContentReference.StartPage) as HomePage;
-            var model = ContentViewModel.Create(homePage);
-            return View("ResetPasswordConfirmation", model);
-        }
+        AddErrors(result.Errors.Select(x => x.Code));
+
+        return View();
+    }
+
+    [AllowAnonymous]
+    public ActionResult ResetPasswordConfirmation()
+    {
+        var homePage = _contentLoader.Get<PageData>(ContentReference.StartPage) as HomePage;
+        var model = ContentViewModel.Create(homePage);
+        return View("ResetPasswordConfirmation", model);
     }
 }

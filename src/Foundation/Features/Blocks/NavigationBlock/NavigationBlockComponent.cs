@@ -1,46 +1,45 @@
-﻿namespace Foundation.Features.Blocks.NavigationBlock
+﻿namespace Foundation.Features.Blocks.NavigationBlock;
+
+public class NavigationBlockComponent : AsyncBlockComponent<NavigationBlock>
 {
-    public class NavigationBlockComponent : AsyncBlockComponent<NavigationBlock>
+    private readonly IContentLoader _contentLoader;
+    private readonly IPageRouteHelper _pageRouteHelper;
+
+    public NavigationBlockComponent(IContentLoader contentLoader, IPageRouteHelper pageRouteHelper)
     {
-        private readonly IContentLoader _contentLoader;
-        private readonly IPageRouteHelper _pageRouteHelper;
+        _contentLoader = contentLoader;
+        _pageRouteHelper = pageRouteHelper;
+    }
 
-        public NavigationBlockComponent(IContentLoader contentLoader, IPageRouteHelper pageRouteHelper)
+    protected override async Task<IViewComponentResult> InvokeComponentAsync(NavigationBlock currentBlock)
+    {
+        var rootNavigation = currentBlock.RootPage as ContentReference;
+        if (ContentReference.IsNullOrEmpty(currentBlock.RootPage))
         {
-            _contentLoader = contentLoader;
-            _pageRouteHelper = pageRouteHelper;
+            rootNavigation = _pageRouteHelper.ContentLink;
         }
 
-        protected override async Task<IViewComponentResult> InvokeComponentAsync(NavigationBlock currentBlock)
+        var childPages = _contentLoader.GetChildren<PageData>(rootNavigation);
+        var model = new NavigationBlockViewModel(currentBlock);
+        if (childPages != null && childPages.Count() > 0)
         {
-            var rootNavigation = currentBlock.RootPage as ContentReference;
-            if (ContentReference.IsNullOrEmpty(currentBlock.RootPage))
+            var linkCollection = new List<NavigationItem>();
+            foreach (var page in childPages)
             {
-                rootNavigation = _pageRouteHelper.ContentLink;
-            }
-
-            var childPages = _contentLoader.GetChildren<PageData>(rootNavigation);
-            var model = new NavigationBlockViewModel(currentBlock);
-            if (childPages != null && childPages.Count() > 0)
-            {
-                var linkCollection = new List<NavigationItem>();
-                foreach (var page in childPages)
+                if (page.VisibleInMenu)
                 {
-                    if (page.VisibleInMenu)
-                    {
-                        linkCollection.Add(new NavigationItem(page, Url));
-                    }
+                    linkCollection.Add(new NavigationItem(page, Url));
                 }
-
-                model.Items.AddRange(linkCollection.Where(x => !string.IsNullOrEmpty(x.Url)));
             }
 
-            if (string.IsNullOrEmpty(currentBlock.Heading))
-            {
-                model.Heading = _pageRouteHelper.Page.Name;
-            }
-
-            return await Task.FromResult(View("~/Features/Blocks/NavigationBlock/NavigationBlock.cshtml", model));
+            model.Items.AddRange(linkCollection.Where(x => !string.IsNullOrEmpty(x.Url)));
         }
+
+        if (string.IsNullOrEmpty(currentBlock.Heading))
+        {
+            model.Heading = _pageRouteHelper.Page.Name;
+        }
+
+        return await Task.FromResult(View("~/Features/Blocks/NavigationBlock/NavigationBlock.cshtml", model));
     }
 }

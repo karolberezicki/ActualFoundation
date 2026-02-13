@@ -1,16 +1,15 @@
-﻿namespace Foundation.Infrastructure.Cms.Attributes
+﻿namespace Foundation.Infrastructure.Cms.Attributes;
+
+public class LocalizedRegularExpressionAttribute : RegularExpressionAttribute
 {
-    public class LocalizedRegularExpressionAttribute : RegularExpressionAttribute
+    private readonly string _name;
+
+    public LocalizedRegularExpressionAttribute(string pattern, string name)
+        : base(pattern) => _name = name;
+
+    public override string FormatErrorMessage(string name)
     {
-        private readonly string _name;
-
-        public LocalizedRegularExpressionAttribute(string pattern, string name)
-            : base(pattern) => _name = name;
-
-        public override string FormatErrorMessage(string name)
-        {
-            ErrorMessage = LocalizationService.Current.GetString(_name);
-            return base.FormatErrorMessage(name);
-        }
+        ErrorMessage = LocalizationService.Current.GetString(_name);
+        return base.FormatErrorMessage(name);
     }
 }

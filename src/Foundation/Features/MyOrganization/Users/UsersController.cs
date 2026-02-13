@@ -12,268 +12,267 @@ using Foundation.Infrastructure.Commerce.Customer;
 using Foundation.Infrastructure.Commerce.Customer.Services;
 using System.Web;
 
-namespace Foundation.Features.MyOrganization.Users
+namespace Foundation.Features.MyOrganization.Users;
+
+[Authorize]
+public class UsersController : PageController<UsersPage>
 {
-    [Authorize]
-    public class UsersController : PageController<UsersPage>
+    private readonly ICustomerService _customerService;
+    private readonly IOrganizationService _organizationService;
+    private readonly IContentLoader _contentLoader;
+    private readonly IMailService _mailService;
+    private readonly ApplicationUserManager<SiteUser> _userManager;
+    private readonly ApplicationSignInManager<SiteUser> _signInManager;
+    private readonly LocalizationService _localizationService;
+    private readonly ISearchService _searchService;
+    private readonly ICookieService _cookieService;
+    private readonly ISettingsService _settingsService;
+
+    public UsersController(
+        ICustomerService customerService,
+        IOrganizationService organizationService,
+        ApplicationUserManager<SiteUser> userManager,
+        ApplicationSignInManager<SiteUser> signinManager,
+        IContentLoader contentLoader,
+        IMailService mailService,
+        LocalizationService localizationService,
+        ISearchService searchService,
+        ICookieService cookieService,
+        ISettingsService settingsService)
     {
-        private readonly ICustomerService _customerService;
-        private readonly IOrganizationService _organizationService;
-        private readonly IContentLoader _contentLoader;
-        private readonly IMailService _mailService;
-        private readonly ApplicationUserManager<SiteUser> _userManager;
-        private readonly ApplicationSignInManager<SiteUser> _signInManager;
-        private readonly LocalizationService _localizationService;
-        private readonly ISearchService _searchService;
-        private readonly ICookieService _cookieService;
-        private readonly ISettingsService _settingsService;
+        _customerService = customerService;
+        _organizationService = organizationService;
+        _userManager = userManager;
+        _signInManager = signinManager;
+        _contentLoader = contentLoader;
+        _mailService = mailService;
+        _localizationService = localizationService;
+        _searchService = searchService;
+        _cookieService = cookieService;
+        _settingsService = settingsService;
+    }
 
-        public UsersController(
-            ICustomerService customerService,
-            IOrganizationService organizationService,
-            ApplicationUserManager<SiteUser> userManager,
-            ApplicationSignInManager<SiteUser> signinManager,
-            IContentLoader contentLoader,
-            IMailService mailService,
-            LocalizationService localizationService,
-            ISearchService searchService,
-            ICookieService cookieService,
-            ISettingsService settingsService)
+    [NavigationAuthorize("Admin")]
+    public ActionResult Index(UsersPage currentPage)
+    {
+        if (TempData["ImpersonateFail"] != null)
         {
-            _customerService = customerService;
-            _organizationService = organizationService;
-            _userManager = userManager;
-            _signInManager = signinManager;
-            _contentLoader = contentLoader;
-            _mailService = mailService;
-            _localizationService = localizationService;
-            _searchService = searchService;
-            _cookieService = cookieService;
-            _settingsService = settingsService;
+            ViewBag.Impersonate = (bool)TempData["ImpersonateFail"];
         }
 
-        [NavigationAuthorize("Admin")]
-        public ActionResult Index(UsersPage currentPage)
+        var organization = _organizationService.GetCurrentFoundationOrganization();
+        var currentOrganization = organization;
+        var currentOrganizationContext = _cookieService.Get(Constant.Fields.SelectedOrganization);
+        if (currentOrganizationContext != null)
         {
-            if (TempData["ImpersonateFail"] != null)
-            {
-                ViewBag.Impersonate = (bool)TempData["ImpersonateFail"];
-            }
-
-            var organization = _organizationService.GetCurrentFoundationOrganization();
-            var currentOrganization = organization;
-            var currentOrganizationContext = _cookieService.Get(Constant.Fields.SelectedOrganization);
-            if (currentOrganizationContext != null)
-            {
-                currentOrganization = _organizationService.GetFoundationOrganizationById(currentOrganizationContext);
-            }
-
-            var viewModel = new UsersPageViewModel
-            {
-                CurrentContent = currentPage,
-                Users = _customerService.GetContactsForOrganization(currentOrganization),
-                Organizations = organization?.SubOrganizations ?? new List<FoundationOrganization>()
-            };
-
-            if (currentOrganization.SubOrganizations.Any())
-            {
-                foreach (var subOrg in currentOrganization.SubOrganizations)
-                {
-                    var contacts = _customerService.GetContactsForOrganization(subOrg);
-                    viewModel.Users.AddRange(contacts);
-                }
-            }
-
-            return View(viewModel);
+            currentOrganization = _organizationService.GetFoundationOrganizationById(currentOrganizationContext);
         }
 
-        [NavigationAuthorize("Admin")]
-        public ActionResult AddUser(UsersPage currentPage)
+        var viewModel = new UsersPageViewModel
         {
-            var organization = _organizationService.GetCurrentFoundationOrganization();
-            var viewModel = new UsersPageViewModel
+            CurrentContent = currentPage,
+            Users = _customerService.GetContactsForOrganization(currentOrganization),
+            Organizations = organization?.SubOrganizations ?? new List<FoundationOrganization>()
+        };
+
+        if (currentOrganization.SubOrganizations.Any())
+        {
+            foreach (var subOrg in currentOrganization.SubOrganizations)
             {
-                CurrentContent = currentPage,
-                Contact = FoundationContact.New(),
-                Organizations = organization?.SubOrganizations ?? new List<FoundationOrganization>()
-            };
-            return View(viewModel);
+                var contacts = _customerService.GetContactsForOrganization(subOrg);
+                viewModel.Users.AddRange(contacts);
+            }
         }
 
-        [NavigationAuthorize("Admin")]
-        public ActionResult EditUser(UsersPage currentPage, string id)
+        return View(viewModel);
+    }
+
+    [NavigationAuthorize("Admin")]
+    public ActionResult AddUser(UsersPage currentPage)
+    {
+        var organization = _organizationService.GetCurrentFoundationOrganization();
+        var viewModel = new UsersPageViewModel
         {
-            if (string.IsNullOrEmpty(id))
-            {
-                return RedirectToAction("Index");
-            }
+            CurrentContent = currentPage,
+            Contact = FoundationContact.New(),
+            Organizations = organization?.SubOrganizations ?? new List<FoundationOrganization>()
+        };
+        return View(viewModel);
+    }
 
-            var organization = _organizationService.GetCurrentFoundationOrganization();
-            var contact = _customerService.GetContactById(id);
-
-            var viewModel = new UsersPageViewModel
-            {
-                CurrentContent = currentPage,
-                Contact = contact,
-                Organizations = organization?.SubOrganizations ?? new List<FoundationOrganization>(),
-                SubOrganization =
-                    contact.B2BUserRole != B2BUserRoles.Admin
-                        ? _organizationService.GetSubFoundationOrganizationById(contact.FoundationOrganization.OrganizationId.ToString())
-                        : new SubFoundationOrganizationModel(organization)
-            };
-            return View(viewModel);
-        }
-
-        [NavigationAuthorize("Admin")]
-        public ActionResult RemoveUser(string id)
+    [NavigationAuthorize("Admin")]
+    public ActionResult EditUser(UsersPage currentPage, string id)
+    {
+        if (string.IsNullOrEmpty(id))
         {
-            if (string.IsNullOrEmpty(id))
-            {
-                return RedirectToAction("Index");
-            }
-
-            _customerService.RemoveContactFromOrganization(id);
-
             return RedirectToAction("Index");
         }
 
-        [HttpPost]
-        [AllowDBWrite]
-        [NavigationAuthorize("Admin")]
-        public ActionResult UpdateUser(UsersPageViewModel viewModel)
+        var organization = _organizationService.GetCurrentFoundationOrganization();
+        var contact = _customerService.GetContactById(id);
+
+        var viewModel = new UsersPageViewModel
         {
-            _customerService.EditContact(viewModel.Contact);
-            return RedirectToAction("Index", UrlResolver.Current.GetUrl(viewModel.CurrentContent.ContentLink));
+            CurrentContent = currentPage,
+            Contact = contact,
+            Organizations = organization?.SubOrganizations ?? new List<FoundationOrganization>(),
+            SubOrganization =
+                contact.B2BUserRole != B2BUserRoles.Admin
+                    ? _organizationService.GetSubFoundationOrganizationById(contact.FoundationOrganization.OrganizationId.ToString())
+                    : new SubFoundationOrganizationModel(organization)
+        };
+        return View(viewModel);
+    }
+
+    [NavigationAuthorize("Admin")]
+    public ActionResult RemoveUser(string id)
+    {
+        if (string.IsNullOrEmpty(id))
+        {
+            return RedirectToAction("Index");
+        }
+
+        _customerService.RemoveContactFromOrganization(id);
+
+        return RedirectToAction("Index");
+    }
+
+    [HttpPost]
+    [AllowDBWrite]
+    [NavigationAuthorize("Admin")]
+    public ActionResult UpdateUser(UsersPageViewModel viewModel)
+    {
+        _customerService.EditContact(viewModel.Contact);
+        return RedirectToAction("Index", UrlResolver.Current.GetUrl(viewModel.CurrentContent.ContentLink));
             
+    }
+
+    [HttpPost]
+    [AllowDBWrite]
+    [NavigationAuthorize("Admin")]
+    public async Task<ActionResult> AddUser(UsersPageViewModel viewModel)
+    {
+        var user = await _userManager.FindByEmailAsync(viewModel.Contact.Email);
+        if (user != null)
+        {
+            var contact = _customerService.GetContactByEmail(user.Email);
+            var organization = _organizationService.GetCurrentFoundationOrganization();
+            if (_customerService.HasOrganization(contact.ContactId.ToString()))
+            {
+                viewModel.Contact.ShowOrganizationError = true;
+                viewModel.Organizations = organization.SubOrganizations ?? new List<FoundationOrganization>();
+                return View(viewModel);
+            }
+
+            var organizationId = organization.OrganizationId.ToString();
+            var currentOrganizationContext = _cookieService.Get(Constant.Fields.SelectedOrganization);
+            if (currentOrganizationContext != null)
+            {
+                organizationId = currentOrganizationContext;
+            }
+
+            _customerService.AddContactToOrganization(contact, organizationId);
+            _customerService.UpdateContact(contact.ContactId.ToString(), viewModel.Contact.UserRole, viewModel.Contact.UserLocationId);
+        }
+        else
+        {
+            await SaveUser(viewModel);
         }
 
-        [HttpPost]
-        [AllowDBWrite]
-        [NavigationAuthorize("Admin")]
-        public async Task<ActionResult> AddUser(UsersPageViewModel viewModel)
+        return RedirectToAction("Index", UrlResolver.Current.GetUrl(viewModel.CurrentContent.ContentLink));
+        //return RedirectToAction("Index");
+    }
+
+    [NavigationAuthorize("Admin")]
+    public JsonResult GetUsers(string query)
+    {
+        var data = _searchService.SearchUsers(query);
+        return Json(data);
+    }
+
+    public JsonResult GetAddresses(string id)
+    {
+        var organization = _organizationService.GetSubOrganizationById(id);
+        var addresses = organization.Locations;
+
+        return Json(addresses);
+    }
+
+    [NavigationAuthorize("Admin")]
+    public async Task<ActionResult> ImpersonateUserAsync(string email)
+    {
+        var success = false;
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user != null)
         {
-            var user = await _userManager.FindByEmailAsync(viewModel.Contact.Email);
-            if (user != null)
-            {
-                var contact = _customerService.GetContactByEmail(user.Email);
-                var organization = _organizationService.GetCurrentFoundationOrganization();
-                if (_customerService.HasOrganization(contact.ContactId.ToString()))
-                {
-                    viewModel.Contact.ShowOrganizationError = true;
-                    viewModel.Organizations = organization.SubOrganizations ?? new List<FoundationOrganization>();
-                    return View(viewModel);
-                }
-
-                var organizationId = organization.OrganizationId.ToString();
-                var currentOrganizationContext = _cookieService.Get(Constant.Fields.SelectedOrganization);
-                if (currentOrganizationContext != null)
-                {
-                    organizationId = currentOrganizationContext;
-                }
-
-                _customerService.AddContactToOrganization(contact, organizationId);
-                _customerService.UpdateContact(contact.ContactId.ToString(), viewModel.Contact.UserRole, viewModel.Contact.UserLocationId);
-            }
-            else
-            {
-                await SaveUser(viewModel);
-            }
-
-            return RedirectToAction("Index", UrlResolver.Current.GetUrl(viewModel.CurrentContent.ContentLink));
-            //return RedirectToAction("Index");
+            _cookieService.Set(Constant.Cookies.B2BImpersonatingAdmin, User.Identity.Name, true);
+            await _signInManager.SignInAsync(user.UserName, user.Password, "");
+            success = true;
         }
 
-        [NavigationAuthorize("Admin")]
-        public JsonResult GetUsers(string query)
+        if (success)
         {
-            var data = _searchService.SearchUsers(query);
-            return Json(data);
+            return Redirect("/");
         }
-
-        public JsonResult GetAddresses(string id)
+        else
         {
-            var organization = _organizationService.GetSubOrganizationById(id);
-            var addresses = organization.Locations;
-
-            return Json(addresses);
+            TempData["ImpersonateFail"] = false;
+            return RedirectToAction("Index");
         }
+    }
 
-        [NavigationAuthorize("Admin")]
-        public async Task<ActionResult> ImpersonateUserAsync(string email)
+    public async Task<ActionResult> BackAsAdminAsync()
+    {
+        var adminUsername = _cookieService.Get(Constant.Cookies.B2BImpersonatingAdmin);
+        if (!string.IsNullOrEmpty(adminUsername))
         {
-            var success = false;
-            var user = await _userManager.FindByEmailAsync(email);
-            if (user != null)
+            var adminUser = await _userManager.FindByEmailAsync(adminUsername);
+            if (adminUser != null)
             {
-                _cookieService.Set(Constant.Cookies.B2BImpersonatingAdmin, User.Identity.Name, true);
-                await _signInManager.SignInAsync(user.UserName, user.Password, "");
-                success = true;
+                await _signInManager.SignInAsync(adminUser, false);
             }
 
-            if (success)
-            {
-                return Redirect("/");
-            }
-            else
-            {
-                TempData["ImpersonateFail"] = false;
-                return RedirectToAction("Index");
-            }
+            _cookieService.Remove(Constant.Cookies.B2BImpersonatingAdmin);
         }
+        return Redirect(Request.Headers["Referer"].ToString() ?? "/");
+    }
 
-        public async Task<ActionResult> BackAsAdminAsync()
+    private async Task SaveUser(UsersPageViewModel viewModel)
+    {
+        var contactUser = new SiteUser
         {
-            var adminUsername = _cookieService.Get(Constant.Cookies.B2BImpersonatingAdmin);
-            if (!string.IsNullOrEmpty(adminUsername))
-            {
-                var adminUser = await _userManager.FindByEmailAsync(adminUsername);
-                if (adminUser != null)
-                {
-                    await _signInManager.SignInAsync(adminUser, false);
-                }
+            UserName = viewModel.Contact.Email,
+            Email = viewModel.Contact.Email,
+            Password = "password",
+            FirstName = viewModel.Contact.FirstName,
+            LastName = viewModel.Contact.LastName,
+            RegistrationSource = "Registration page"
+        };
 
-                _cookieService.Remove(Constant.Cookies.B2BImpersonatingAdmin);
-            }
-            return Redirect(Request.Headers["Referer"].ToString() ?? "/");
-        }
+        await _userManager.CreateAsync(contactUser);
 
-        private async Task SaveUser(UsersPageViewModel viewModel)
+        _customerService.CreateContact(viewModel.Contact, contactUser.Id);
+
+        var user = await _userManager.FindByNameAsync(viewModel.Contact.Email);
+        if (user != null)
         {
-            var contactUser = new SiteUser
+            var referencePages = _settingsService.GetSiteSettings<ReferencePageSettings>();
+            if (referencePages?.ResetPasswordMail.IsNullOrEmpty() ?? true)
             {
-                UserName = viewModel.Contact.Email,
-                Email = viewModel.Contact.Email,
-                Password = "password",
-                FirstName = viewModel.Contact.FirstName,
-                LastName = viewModel.Contact.LastName,
-                RegistrationSource = "Registration page"
-            };
-
-            await _userManager.CreateAsync(contactUser);
-
-            _customerService.CreateContact(viewModel.Contact, contactUser.Id);
-
-            var user = await _userManager.FindByNameAsync(viewModel.Contact.Email);
-            if (user != null)
-            {
-                var referencePages = _settingsService.GetSiteSettings<ReferencePageSettings>();
-                if (referencePages?.ResetPasswordMail.IsNullOrEmpty() ?? true)
-                {
-                    return;
-                }
-                var body = await _mailService.GetHtmlBodyForMail(referencePages.ResetPasswordMail, new NameValueCollection(), ContentLanguage.PreferredCulture.TwoLetterISOLanguageName);
-                var mailPage = _contentLoader.Get<MailBasePage>(referencePages.ResetPasswordMail);
-                var code = await _userManager.GeneratePasswordResetTokenAsync(user);
-                var url = Url.Action("ResetPassword", "ResetPassword", new { userId = user.Id, code = HttpUtility.UrlEncode(code), language = ContentLanguage.PreferredCulture.TwoLetterISOLanguageName }, Request.Scheme);
-
-                body = body.Replace("[MailUrl]",
-                    string.Format("{0}<a href=\"{1}\">{2}</a>",
-                        _localizationService.GetString("/ResetPassword/Mail/Text"),
-                        url,
-                        _localizationService.GetString("/ResetPassword/Mail/Link")));
-
-                _mailService.Send(mailPage.Subject, body, user.Email);
+                return;
             }
+            var body = await _mailService.GetHtmlBodyForMail(referencePages.ResetPasswordMail, new NameValueCollection(), ContentLanguage.PreferredCulture.TwoLetterISOLanguageName);
+            var mailPage = _contentLoader.Get<MailBasePage>(referencePages.ResetPasswordMail);
+            var code = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var url = Url.Action("ResetPassword", "ResetPassword", new { userId = user.Id, code = HttpUtility.UrlEncode(code), language = ContentLanguage.PreferredCulture.TwoLetterISOLanguageName }, Request.Scheme);
+
+            body = body.Replace("[MailUrl]",
+                string.Format("{0}<a href=\"{1}\">{2}</a>",
+                    _localizationService.GetString("/ResetPassword/Mail/Text"),
+                    url,
+                    _localizationService.GetString("/ResetPassword/Mail/Link")));
+
+            _mailService.Send(mailPage.Subject, body, user.Email);
         }
     }
 }

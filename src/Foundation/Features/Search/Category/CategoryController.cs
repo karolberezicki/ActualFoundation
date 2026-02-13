@@ -2,59 +2,58 @@
 using Foundation.Infrastructure.Commerce.Customer.Services;
 using Foundation.Infrastructure.Personalization;
 
-namespace Foundation.Features.Search.Category
+namespace Foundation.Features.Search.Category;
+
+public class CategoryController : CatalogContentControllerBase<GenericNode>
 {
-    public class CategoryController : CatalogContentControllerBase<GenericNode>
+    private readonly ISearchViewModelFactory _viewModelFactory;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+
+    public CategoryController(
+        ISearchViewModelFactory viewModelFactory,
+        IHttpContextAccessor httpContextAccessor,
+        ICommerceTrackingService recommendationService,
+        //IReviewService reviewService,
+        //IReviewActivityService reviewActivityService,
+        ReferenceConverter referenceConverter,
+        IContentLoader contentLoader,
+        UrlResolver urlResolver,
+        ILoyaltyService loyaltyService) : base(referenceConverter, contentLoader, urlResolver/*, reviewService, reviewActivityService*/, recommendationService, loyaltyService)
     {
-        private readonly ISearchViewModelFactory _viewModelFactory;
-        private readonly IHttpContextAccessor _httpContextAccessor;
+        _viewModelFactory = viewModelFactory;
+        _httpContextAccessor = httpContextAccessor;
+    }
 
-        public CategoryController(
-            ISearchViewModelFactory viewModelFactory,
-            IHttpContextAccessor httpContextAccessor,
-            ICommerceTrackingService recommendationService,
-            //IReviewService reviewService,
-            //IReviewActivityService reviewActivityService,
-            ReferenceConverter referenceConverter,
-            IContentLoader contentLoader,
-            UrlResolver urlResolver,
-            ILoyaltyService loyaltyService) : base(referenceConverter, contentLoader, urlResolver/*, reviewService, reviewActivityService*/, recommendationService, loyaltyService)
+    [AcceptVerbs(new string[] { "GET", "POST" })]
+    public async Task<ViewResult> Index(GenericNode currentContent, FilterOptionViewModel viewModel)
+    {
+        if (string.IsNullOrEmpty(viewModel.ViewSwitcher))
         {
-            _viewModelFactory = viewModelFactory;
-            _httpContextAccessor = httpContextAccessor;
+            viewModel.ViewSwitcher = string.IsNullOrEmpty(currentContent.DefaultTemplate) ? "Grid" : currentContent.DefaultTemplate;
         }
 
-        [AcceptVerbs(new string[] { "GET", "POST" })]
-        public async Task<ViewResult> Index(GenericNode currentContent, FilterOptionViewModel viewModel)
+        var model = _viewModelFactory.Create(currentContent,
+            _httpContextAccessor.HttpContext.Request.Query["facets"].ToString(),
+            0,
+            viewModel);
+
+        if (HttpContext.Request.Method == "GET")
         {
-            if (string.IsNullOrEmpty(viewModel.ViewSwitcher))
-            {
-                viewModel.ViewSwitcher = string.IsNullOrEmpty(currentContent.DefaultTemplate) ? "Grid" : currentContent.DefaultTemplate;
-            }
-
-            var model = _viewModelFactory.Create(currentContent,
-                _httpContextAccessor.HttpContext.Request.Query["facets"].ToString(),
-                0,
-                viewModel);
-
-            if (HttpContext.Request.Method == "GET")
-            {
-                var response = await _recommendationService.TrackCategory(HttpContext, currentContent);
-                model.Recommendations = response.GetCategoryRecommendations(_referenceConverter);
-            }
-
-            model.BreadCrumb = GetBreadCrumb(currentContent.Code);
-            return View(model);
+            var response = await _recommendationService.TrackCategory(HttpContext, currentContent);
+            model.Recommendations = response.GetCategoryRecommendations(_referenceConverter);
         }
 
-        public ActionResult Facet(GenericNode currentContent, FilterOptionViewModel viewModel)
-        {
-            if (string.IsNullOrEmpty(viewModel.ViewSwitcher))
-            {
-                viewModel.ViewSwitcher = string.IsNullOrEmpty(currentContent.DefaultTemplate) ? "Grid" : currentContent.DefaultTemplate;
-            }
+        model.BreadCrumb = GetBreadCrumb(currentContent.Code);
+        return View(model);
+    }
 
-            return PartialView("_Facet", viewModel);
+    public ActionResult Facet(GenericNode currentContent, FilterOptionViewModel viewModel)
+    {
+        if (string.IsNullOrEmpty(viewModel.ViewSwitcher))
+        {
+            viewModel.ViewSwitcher = string.IsNullOrEmpty(currentContent.DefaultTemplate) ? "Grid" : currentContent.DefaultTemplate;
         }
+
+        return PartialView("_Facet", viewModel);
     }
 }

@@ -1,19 +1,18 @@
-﻿namespace Foundation.Infrastructure.Commerce.Marketing
+﻿namespace Foundation.Infrastructure.Commerce.Marketing;
+
+public interface IUniqueCouponService
 {
-    public interface IUniqueCouponService
-    {
-        bool SaveCoupons(List<UniqueCoupon> coupons);
+    bool SaveCoupons(List<UniqueCoupon> coupons);
 
-        bool DeleteById(long id);
+    bool DeleteById(long id);
 
-        bool DeleteByPromotionId(int id);
+    bool DeleteByPromotionId(int id);
 
-        List<UniqueCoupon> GetByPromotionId(int id);
+    List<UniqueCoupon> GetByPromotionId(int id);
 
-        UniqueCoupon GetById(long id);
+    UniqueCoupon GetById(long id);
 
-        string GenerateCoupon();
+    string GenerateCoupon();
 
-        bool DeleteExpiredCoupons();
-    }
+    bool DeleteExpiredCoupons();
 }

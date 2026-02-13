@@ -1,29 +1,28 @@
 ﻿using Foundation.Infrastructure.Commerce.GiftCard;
 using Mediachase.Commerce.Customers;
 
-namespace Foundation.Features.MyAccount.GiftCardPage
+namespace Foundation.Features.MyAccount.GiftCardPage;
+
+/// <summary>
+/// A page to list all gift card belonging to a customer
+/// </summary>
+public class GiftCardPageController : PageController<GiftCardPage>
 {
-    /// <summary>
-    /// A page to list all gift card belonging to a customer
-    /// </summary>
-    public class GiftCardPageController : PageController<GiftCardPage>
+    private readonly IGiftCardService _giftCardService;
+
+    public GiftCardPageController(IGiftCardService giftCardService)
     {
-        private readonly IGiftCardService _giftCardService;
+        _giftCardService = giftCardService;
+    }
 
-        public GiftCardPageController(IGiftCardService giftCardService)
+    public ActionResult Index(GiftCardPage currentPage)
+    {
+        var model = new GiftCardViewModel(currentPage)
         {
-            _giftCardService = giftCardService;
-        }
+            CurrentContent = currentPage,
+            GiftCardList = _giftCardService.GetCustomerGiftCards(CustomerContext.Current.CurrentContactId.ToString()).ToList()
+        };
 
-        public ActionResult Index(GiftCardPage currentPage)
-        {
-            var model = new GiftCardViewModel(currentPage)
-            {
-                CurrentContent = currentPage,
-                GiftCardList = _giftCardService.GetCustomerGiftCards(CustomerContext.Current.CurrentContactId.ToString()).ToList()
-            };
-
-            return View(model);
-        }
+        return View(model);
     }
 }

@@ -1,8 +1,7 @@
-﻿namespace Foundation.Infrastructure.Cms.Settings
+﻿namespace Foundation.Infrastructure.Cms.Settings;
+
+[AttributeUsage(validOn: AttributeTargets.Class)]
+public sealed class SettingsContentTypeAttribute : ContentTypeAttribute
 {
-    [AttributeUsage(validOn: AttributeTargets.Class)]
-    public sealed class SettingsContentTypeAttribute : ContentTypeAttribute
-    {
-        public string SettingsName { get; set; }
-    }
+    public string SettingsName { get; set; }
 }

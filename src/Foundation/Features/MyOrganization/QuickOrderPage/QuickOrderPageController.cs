@@ -1,14 +1,13 @@
-﻿namespace Foundation.Features.MyOrganization.QuickOrderPage
+﻿namespace Foundation.Features.MyOrganization.QuickOrderPage;
+
+[Authorize]
+public class QuickOrderPageController : PageController<QuickOrderPage>
 {
-    [Authorize]
-    public class QuickOrderPageController : PageController<QuickOrderPage>
+    public ActionResult Index(QuickOrderPage currentPage)
     {
-        public ActionResult Index(QuickOrderPage currentPage)
+        return View(new QuickOrderPageViewModel
         {
-            return View(new QuickOrderPageViewModel
-            {
-                CurrentContent = currentPage
-            });
-        }
+            CurrentContent = currentPage
+        });
     }
 }

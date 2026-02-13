@@ -1,13 +1,12 @@
-namespace Foundation.Features.MyAccount.AddressBook
+namespace Foundation.Features.MyAccount.AddressBook;
+
+public class AddressCollectionViewModel : ContentViewModel<AddressBookPage>
 {
-    public class AddressCollectionViewModel : ContentViewModel<AddressBookPage>
+    public AddressCollectionViewModel()
     {
-        public AddressCollectionViewModel()
-        {
-        }
-
-        public AddressCollectionViewModel(AddressBookPage currentPage) : base(currentPage) { }
-
-        public IEnumerable<AddressModel> Addresses { get; set; }
     }
+
+    public AddressCollectionViewModel(AddressBookPage currentPage) : base(currentPage) { }
+
+    public IEnumerable<AddressModel> Addresses { get; set; }
 }

@@ -1,9 +1,8 @@
-namespace Foundation.Infrastructure.Cms.Users
-{
-    public class ExternalLoginConfirmationViewModel
-    {
-        public bool Newsletter { get; set; }
+namespace Foundation.Infrastructure.Cms.Users;
 
-        public string ReturnUrl { get; set; }
-    }
+public class ExternalLoginConfirmationViewModel
+{
+    public bool Newsletter { get; set; }
+
+    public string ReturnUrl { get; set; }
 }

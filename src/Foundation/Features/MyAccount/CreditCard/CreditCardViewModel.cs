@@ -1,54 +1,53 @@
 using Foundation.Infrastructure.Commerce.Customer;
 
-namespace Foundation.Features.MyAccount.CreditCard
+namespace Foundation.Features.MyAccount.CreditCard;
+
+/// <summary>
+/// Represent for data of credit card on the view
+/// </summary>
+public class CreditCardViewModel : ContentViewModel<CreditCardPage>
 {
-    /// <summary>
-    /// Represent for data of credit card on the view
-    /// </summary>
-    public class CreditCardViewModel : ContentViewModel<CreditCardPage>
+    public CreditCardViewModel()
     {
-        public CreditCardViewModel()
+    }
+
+    public CreditCardViewModel(CreditCardPage currentPage) : base(currentPage)
+    {
+    }
+
+    public int ContentReference { get; set; }
+    public CreditCardModel CreditCard { get; set; }
+    public bool IsB2B { get; set; }
+    public List<FoundationOrganization> Organizations { get; set; }
+    public string ErrorMessage { get; set; }
+
+    public List<FoundationOrganization> GetAllOrganizationAndSub(FoundationOrganization organizationInfo)
+    {
+        var result = new List<FoundationOrganization>();
+        if (organizationInfo != null)
         {
+            GetAllOganizationAndSub(organizationInfo, result, 0);
         }
 
-        public CreditCardViewModel(CreditCardPage currentPage) : base(currentPage)
-        {
-        }
+        return result;
+    }
 
-        public int ContentReference { get; set; }
-        public CreditCardModel CreditCard { get; set; }
-        public bool IsB2B { get; set; }
-        public List<FoundationOrganization> Organizations { get; set; }
-        public string ErrorMessage { get; set; }
-
-        public List<FoundationOrganization> GetAllOrganizationAndSub(FoundationOrganization organizationInfo)
+    private void GetAllOganizationAndSub(FoundationOrganization organization, List<FoundationOrganization> list, int level)
+    {
+        if (organization != null)
         {
-            var result = new List<FoundationOrganization>();
-            if (organizationInfo != null)
+            while (level > 0)
             {
-                GetAllOganizationAndSub(organizationInfo, result, 0);
+                organization.Name = ".." + organization.Name;
+                level--;
             }
 
-            return result;
-        }
-
-        private void GetAllOganizationAndSub(FoundationOrganization organization, List<FoundationOrganization> list, int level)
-        {
-            if (organization != null)
+            list.Add(organization);
+            if (organization.SubOrganizations.Count > 0)
             {
-                while (level > 0)
+                foreach (var subOrg in organization.SubOrganizations)
                 {
-                    organization.Name = ".." + organization.Name;
-                    level--;
-                }
-
-                list.Add(organization);
-                if (organization.SubOrganizations.Count > 0)
-                {
-                    foreach (var subOrg in organization.SubOrganizations)
-                    {
-                        GetAllOganizationAndSub(subOrg, list, level + 1);
-                    }
+                    GetAllOganizationAndSub(subOrg, list, level + 1);
                 }
             }
         }

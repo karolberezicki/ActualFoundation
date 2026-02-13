@@ -1,13 +1,12 @@
-﻿namespace Foundation.Features.CatalogContent.Variation
-{
-    public class GenericVariantViewModel : EntryViewModelBase<GenericVariant>
-    {
-        public GenericVariantViewModel()
-        {
-        }
+﻿namespace Foundation.Features.CatalogContent.Variation;
 
-        public GenericVariantViewModel(GenericVariant variantBase) : base(variantBase)
-        {
-        }
+public class GenericVariantViewModel : EntryViewModelBase<GenericVariant>
+{
+    public GenericVariantViewModel()
+    {
+    }
+
+    public GenericVariantViewModel(GenericVariant variantBase) : base(variantBase)
+    {
     }
 }

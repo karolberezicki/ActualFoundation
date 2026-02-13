@@ -3,81 +3,80 @@ using EPiServer.Find.Helpers.Text;
 using Foundation.Infrastructure.Cms;
 using Schema.NET;
 
-namespace Foundation.Infrastructure.SchemaMarkup
+namespace Foundation.Infrastructure.SchemaMarkup;
+
+/// <summary>
+/// Map GenericProduct to Schema.org product object
+/// </summary>
+public class GenericProductSchemaDataMapper : ISchemaDataMapper<GenericProduct>
 {
-    /// <summary>
-    /// Map GenericProduct to Schema.org product object
-    /// </summary>
-    public class GenericProductSchemaDataMapper : ISchemaDataMapper<GenericProduct>
+    private readonly ICurrentMarket _currentMarket;
+    private readonly ICurrencyService _currencyService;
+
+    public GenericProductSchemaDataMapper(ICurrentMarket currentMarket, ICurrencyService currencyService)
     {
-        private readonly ICurrentMarket _currentMarket;
-        private readonly ICurrencyService _currencyService;
+        _currentMarket = currentMarket;
+        _currencyService = currencyService;
+    }
 
-        public GenericProductSchemaDataMapper(ICurrentMarket currentMarket, ICurrencyService currencyService)
+    public Thing Map(GenericProduct content)
+    {
+        var variants = content.VariationContents();
+
+        //Set availability based on inventory
+        var availability = ItemAvailability.OutOfStock;
+        var inventories = content.Inventories();
+        if (inventories.Any(x => !x.IsTracked || x.InStockQuantity > x.ReorderMinQuantity))
         {
-            _currentMarket = currentMarket;
-            _currencyService = currencyService;
+            availability = ItemAvailability.InStock;
+        }
+        else if (inventories.Any(x => x.InStockQuantity > 0))
+        {
+            availability = ItemAvailability.LimitedAvailability;
         }
 
-        public Thing Map(GenericProduct content)
+        //Set prices or price range
+        var prices = content.Prices().Where(x => x.UnitPrice.Currency.Equals(_currencyService.GetCurrentCurrency()));
+        var minPrice = prices.Any() ? prices.Min(x => x.UnitPrice) : new Money();
+        var maxPrice = prices.Any() ? prices.Max(x => x.UnitPrice) : new Money();
+        var priceEndDate = prices.Any() ?
+            prices.Where(x => x.UnitPrice.Equals(minPrice) || x.UnitPrice.Equals(maxPrice)).Min(x => x.ValidUntil ?? DateTime.MaxValue)
+            : DateTime.Now;
+
+        var offer = new Offer
         {
-            var variants = content.VariationContents();
+            PriceCurrency = minPrice.Currency.CurrencyCode,
+            ItemCondition = OfferItemCondition.NewCondition,
+            Availability = availability
+        };
 
-            //Set availability based on inventory
-            var availability = ItemAvailability.OutOfStock;
-            var inventories = content.Inventories();
-            if (inventories.Any(x => !x.IsTracked || x.InStockQuantity > x.ReorderMinQuantity))
+        //Handle single price vs price range
+        if (minPrice.Equals(maxPrice))
+        {
+            offer.Price = minPrice.Amount;
+            offer.PriceValidUntil = priceEndDate;
+        }
+        else
+        {
+            offer.PriceSpecification = new PriceSpecification
             {
-                availability = ItemAvailability.InStock;
-            }
-            else if (inventories.Any(x => x.InStockQuantity > 0))
-            {
-                availability = ItemAvailability.LimitedAvailability;
-            }
-
-            //Set prices or price range
-            var prices = content.Prices().Where(x => x.UnitPrice.Currency.Equals(_currencyService.GetCurrentCurrency()));
-            var minPrice = prices.Any() ? prices.Min(x => x.UnitPrice) : new Money();
-            var maxPrice = prices.Any() ? prices.Max(x => x.UnitPrice) : new Money();
-            var priceEndDate = prices.Any() ?
-                prices.Where(x => x.UnitPrice.Equals(minPrice) || x.UnitPrice.Equals(maxPrice)).Min(x => x.ValidUntil ?? DateTime.MaxValue)
-                : DateTime.Now;
-
-            var offer = new Offer
-            {
-                PriceCurrency = minPrice.Currency.CurrencyCode,
-                ItemCondition = OfferItemCondition.NewCondition,
-                Availability = availability
-            };
-
-            //Handle single price vs price range
-            if (minPrice.Equals(maxPrice))
-            {
-                offer.Price = minPrice.Amount;
-                offer.PriceValidUntil = priceEndDate;
-            }
-            else
-            {
-                offer.PriceSpecification = new PriceSpecification
-                {
-                    MinPrice = minPrice.Amount,
-                    MaxPrice = maxPrice.Amount,
-                    ValidThrough = new DateTimeOffset(priceEndDate)
-                };
-            }
-
-            return new Product
-            {
-                Name = content.DisplayName,
-                Image = content.CommerceMediaCollection?.Select(x => x.AssetLink.GetUri(content.Language.Name, true)).ToList(),
-                Description = content.LongDescription?.ToHtmlString()?.StripHtml(),
-                Sku = variants.Select(x => x.Code).ToList(),
-                Brand = new Brand
-                {
-                    Name = content.Brand ?? string.Empty
-                },
-                Offers = offer
+                MinPrice = minPrice.Amount,
+                MaxPrice = maxPrice.Amount,
+                ValidThrough = new DateTimeOffset(priceEndDate)
             };
         }
+
+        return new Product
+        {
+            Name = content.DisplayName,
+            Image = content.CommerceMediaCollection?.Select(x => x.AssetLink.GetUri(content.Language.Name, true)).ToList(),
+            Description = content.LongDescription?.ToHtmlString()?.StripHtml(),
+            Sku = variants.Select(x => x.Code).ToList(),
+            Brand = new Brand
+            {
+                Name = content.Brand ?? string.Empty
+            },
+            Offers = offer
+        };
     }
 }

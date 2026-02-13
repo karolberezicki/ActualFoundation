@@ -30,49 +30,49 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using System.IO;
 
-namespace Foundation
-{
-    public class Startup
-    {
-        private readonly IWebHostEnvironment _webHostingEnvironment;
-        private readonly IConfiguration _configuration;
+namespace Foundation;
 
-        public Startup(IWebHostEnvironment webHostingEnvironment, IConfiguration configuration)
+public class Startup
+{
+    private readonly IWebHostEnvironment _webHostingEnvironment;
+    private readonly IConfiguration _configuration;
+
+    public Startup(IWebHostEnvironment webHostingEnvironment, IConfiguration configuration)
+    {
+        _webHostingEnvironment = webHostingEnvironment;
+        _configuration = configuration;
+    }
+
+    // This method gets called by the runtime. Use this method to add services to the container.
+    public void ConfigureServices(IServiceCollection services)
+    {
+        services.Configure<DataAccessOptions>(options => options.ConnectionStrings.Add(new ConnectionStringOptions
         {
-            _webHostingEnvironment = webHostingEnvironment;
-            _configuration = configuration;
+            Name = "EcfSqlConnection",
+            ConnectionString = _configuration.GetConnectionString("EcfSqlConnection")
+        }));
+        services.AddCmsAspNetIdentity<SiteUser>(o =>
+        {
+            if (string.IsNullOrEmpty(o.ConnectionStringOptions?.ConnectionString))
+            {
+                o.ConnectionStringOptions = new ConnectionStringOptions
+                {
+                    Name = "EcfSqlConnection",
+                    ConnectionString = _configuration.GetConnectionString("EcfSqlConnection")
+                };
+            }
+        });
+
+        //UI
+        if (_webHostingEnvironment.IsDevelopment())
+        {
+            services.Configure<ClientResourceOptions>(uiOptions =>
+            {
+                uiOptions.Debug = true;
+            });
         }
 
-        // This method gets called by the runtime. Use this method to add services to the container.
-        public void ConfigureServices(IServiceCollection services)
-        {
-            services.Configure<DataAccessOptions>(options => options.ConnectionStrings.Add(new ConnectionStringOptions
-            {
-                Name = "EcfSqlConnection",
-                ConnectionString = _configuration.GetConnectionString("EcfSqlConnection")
-            }));
-            services.AddCmsAspNetIdentity<SiteUser>(o =>
-            {
-                if (string.IsNullOrEmpty(o.ConnectionStringOptions?.ConnectionString))
-                {
-                    o.ConnectionStringOptions = new ConnectionStringOptions
-                    {
-                        Name = "EcfSqlConnection",
-                        ConnectionString = _configuration.GetConnectionString("EcfSqlConnection")
-                    };
-                }
-            });
-
-            //UI
-            if (_webHostingEnvironment.IsDevelopment())
-            {
-                services.Configure<ClientResourceOptions>(uiOptions =>
-                {
-                    uiOptions.Debug = true;
-                });
-            }
-
-            services.AddMvc(o =>
+        services.AddMvc(o =>
             {
                 o.Conventions.Add(new FeatureConvention());
                 o.ModelBinderProviders.Insert(0, new DecimalModelBinderProvider());
@@ -80,75 +80,75 @@ namespace Foundation
             })
             .AddRazorOptions(ro => ro.ViewLocationExpanders.Add(new FeatureViewLocationExpander()));
 
-            services.AddCommerce();
-            //services.AddFind(); // Note: currently added via AddContentSearchApi()
-            services.AddDisplay();
-            services.TryAddEnumerable(Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Singleton(typeof(IFirstRequestInitializer), typeof(ContentInstaller)));
-            services.AddDetection();
-            services.AddTinyMceConfiguration();
-            services.AddTinyMceSpellChecker();
+        services.AddCommerce();
+        //services.AddFind(); // Note: currently added via AddContentSearchApi()
+        services.AddDisplay();
+        services.TryAddEnumerable(Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Singleton(typeof(IFirstRequestInitializer), typeof(ContentInstaller)));
+        services.AddDetection();
+        services.AddTinyMceConfiguration();
+        services.AddTinyMceSpellChecker();
 
-            //site specific
-            services.AddEmbeddedLocalization<Startup>();
-            services.Configure<OrderOptions>(o => o.DisableOrderDataLocalization = true);
+        //site specific
+        services.AddEmbeddedLocalization<Startup>();
+        services.Configure<OrderOptions>(o => o.DisableOrderDataLocalization = true);
 
-            services.ConfigureContentApiOptions(o =>
-            {
-                o.EnablePreviewFeatures = true;
-                o.IncludeEmptyContentProperties = true;
-                o.FlattenPropertyModel = false;
-                o.IncludeMasterLanguage = false; 
+        services.ConfigureContentApiOptions(o =>
+        {
+            o.EnablePreviewFeatures = true;
+            o.IncludeEmptyContentProperties = true;
+            o.FlattenPropertyModel = false;
+            o.IncludeMasterLanguage = false; 
                 
-            });
+        });
 
-            // Content Delivery API
-            services.AddContentDeliveryApi()
-                .WithFriendlyUrl()
-                .WithSiteBasedCors();
-            services.AddContentDeliveryApi(OpenIDConnectOptionsDefaults.AuthenticationScheme, options => {
+        // Content Delivery API
+        services.AddContentDeliveryApi()
+            .WithFriendlyUrl()
+            .WithSiteBasedCors();
+        services.AddContentDeliveryApi(OpenIDConnectOptionsDefaults.AuthenticationScheme, options => {
                 options.SiteDefinitionApiEnabled = true;
             })
-               .WithFriendlyUrl()
-               .WithSiteBasedCors();
+            .WithFriendlyUrl()
+            .WithSiteBasedCors();
 
-            // Content Delivery Search API
-            services.AddContentSearchApi(o =>
-            {
-                o.MaximumSearchResults = 100;
-            });
+        // Content Delivery Search API
+        services.AddContentSearchApi(o =>
+        {
+            o.MaximumSearchResults = 100;
+        });
 
-            // Content Delivery Forms API
-            services.AddFormsApi();
+        // Content Delivery Forms API
+        services.AddFormsApi();
 
-            // Content Delivery Commerce API
-            services.AddCommerceApi<SiteUser>(OpenIDConnectOptionsDefaults.AuthenticationScheme, o =>
-            {
-                o.DisableScopeValidation = true;
-            });
+        // Content Delivery Commerce API
+        services.AddCommerceApi<SiteUser>(OpenIDConnectOptionsDefaults.AuthenticationScheme, o =>
+        {
+            o.DisableScopeValidation = true;
+        });
 
-            // Content Definitions API
-            services.AddContentDefinitionsApi(options =>
-            {
-                // Accept anonymous calls
-                options.DisableScopeValidation = true;
-            });
+        // Content Definitions API
+        services.AddContentDefinitionsApi(options =>
+        {
+            // Accept anonymous calls
+            options.DisableScopeValidation = true;
+        });
 
-            // Content Management
-            services.AddContentManagementApi(OpenIDConnectOptionsDefaults.AuthenticationScheme, options =>
-            {
-                // Accept anonymous calls
-                options.DisableScopeValidation = true;
-            });
+        // Content Management
+        services.AddContentManagementApi(OpenIDConnectOptionsDefaults.AuthenticationScheme, options =>
+        {
+            // Accept anonymous calls
+            options.DisableScopeValidation = true;
+        });
 
-            // Service API configuration
-            services.AddServiceApiAuthorization(OpenIDConnectOptionsDefaults.AuthenticationScheme);
+        // Service API configuration
+        services.AddServiceApiAuthorization(OpenIDConnectOptionsDefaults.AuthenticationScheme);
 
-            services.AddOpenIDConnect<SiteUser>(
-                useDevelopmentCertificate: true,
-                signingCertificate: null,
-                encryptionCertificate: null,
-                createSchema: true,
-                options =>
+        services.AddOpenIDConnect<SiteUser>(
+            useDevelopmentCertificate: true,
+            signingCertificate: null,
+            encryptionCertificate: null,
+            createSchema: true,
+            options =>
             {
                 //options.RequireHttps = !_webHostingEnvironment.IsDevelopment();
                 var application = new OpenIDConnectApplication()
@@ -182,76 +182,75 @@ namespace Foundation
                 options.AllowAnonymousFlow = true;
             });
             
-            services.AddOpenIDConnectUI();
+        services.AddOpenIDConnectUI();
 
-            services.ConfigureContentDeliveryApiSerializer(settings => settings.NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore);
+        services.ConfigureContentDeliveryApiSerializer(settings => settings.NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore);
 
-            services.AddNotFoundHandler(o => o.UseSqlServer(_configuration.GetConnectionString("EPiServerDB")), policy => policy.RequireRole(Roles.CmsAdmins));
-            services.AddOptimizelyNotFoundHandler();
-            services.Configure<ProtectedModuleOptions>(x =>
-            {
-                if (!x.Items.Any(x => x.Name.Equals("Foundation")))
-                {
-                    x.Items.Add(new ModuleDetails
-                    {
-                        Name = "Foundation"
-                    });
-                }
-            });
-            // Don't camelCase Json output -- leave property names unchanged
-            //services.AddControllers()
-            //    .AddJsonOptions(options =>
-            //    {
-            //        options.JsonSerializerOptions.PropertyNamingPolicy = null;
-            //    });
-
-            services.AddGetaCategories();
-
-            //Configure GeoLocation for Visitor Groups, etc
-            services.AddMaxMindGeolocationProvider(o =>
-            {
-                o.DatabasePath = Path.Combine(_webHostingEnvironment.ContentRootPath, "App_Data", "GeoLite2-City.mmdb");
-                o.LocationsDatabasePath = Path.Combine(_webHostingEnvironment.ContentRootPath, "App_Data", "GeoLite2-City-Locations-en.csv");
-            });
-
-            // URLs for files in contentassets folder shows friendly URL
-            services.Configure<RoutingOptions>(o =>
-            {
-                o.ContentAssetsBasePath = ContentAssetsBasePath.ContentOwner;
-            });
-
-            services.AddFormRepositoryWorkAround();
-
-            // Project Enhancements
-            services.AddProjectEnhancements();
-        }
-
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        services.AddNotFoundHandler(o => o.UseSqlServer(_configuration.GetConnectionString("EPiServerDB")), policy => policy.RequireRole(Roles.CmsAdmins));
+        services.AddOptimizelyNotFoundHandler();
+        services.Configure<ProtectedModuleOptions>(x =>
         {
-            app.UseNotFoundHandler();
-            if (env.IsDevelopment())
+            if (!x.Items.Any(x => x.Name.Equals("Foundation")))
             {
-                app.UseDeveloperExceptionPage();
+                x.Items.Add(new ModuleDetails
+                {
+                    Name = "Foundation"
+                });
             }
+        });
+        // Don't camelCase Json output -- leave property names unchanged
+        //services.AddControllers()
+        //    .AddJsonOptions(options =>
+        //    {
+        //        options.JsonSerializerOptions.PropertyNamingPolicy = null;
+        //    });
 
-            app.UseGetaCategories();
-            app.UseGetaCategoriesFind();
+        services.AddGetaCategories();
 
-            app.UseAnonymousId();
-            app.UseStaticFiles();
-            app.UseRouting();
-            app.UseCors();
-            app.UseAuthentication();
-            app.UseAuthorization();
-            app.UseAnonymousCartMerging();
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapControllerRoute(name: "Default", pattern: "{controller}/{action}/{id?}");
-                endpoints.MapControllers();
-                endpoints.MapRazorPages();
-                endpoints.MapContent();
-            });
+        //Configure GeoLocation for Visitor Groups, etc
+        services.AddMaxMindGeolocationProvider(o =>
+        {
+            o.DatabasePath = Path.Combine(_webHostingEnvironment.ContentRootPath, "App_Data", "GeoLite2-City.mmdb");
+            o.LocationsDatabasePath = Path.Combine(_webHostingEnvironment.ContentRootPath, "App_Data", "GeoLite2-City-Locations-en.csv");
+        });
+
+        // URLs for files in contentassets folder shows friendly URL
+        services.Configure<RoutingOptions>(o =>
+        {
+            o.ContentAssetsBasePath = ContentAssetsBasePath.ContentOwner;
+        });
+
+        services.AddFormRepositoryWorkAround();
+
+        // Project Enhancements
+        services.AddProjectEnhancements();
+    }
+
+    // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+    public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+    {
+        app.UseNotFoundHandler();
+        if (env.IsDevelopment())
+        {
+            app.UseDeveloperExceptionPage();
         }
+
+        app.UseGetaCategories();
+        app.UseGetaCategoriesFind();
+
+        app.UseAnonymousId();
+        app.UseStaticFiles();
+        app.UseRouting();
+        app.UseCors();
+        app.UseAuthentication();
+        app.UseAuthorization();
+        app.UseAnonymousCartMerging();
+        app.UseEndpoints(endpoints =>
+        {
+            endpoints.MapControllerRoute(name: "Default", pattern: "{controller}/{action}/{id?}");
+            endpoints.MapControllers();
+            endpoints.MapRazorPages();
+            endpoints.MapContent();
+        });
     }
 }

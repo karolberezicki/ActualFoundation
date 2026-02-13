@@ -4,68 +4,67 @@ using EPiServer.Find.Framework;
 using EPiServer.Personalization;
 using Foundation.Infrastructure.Find;
 
-namespace Foundation.Features.Locations.LocationListPage
+namespace Foundation.Features.Locations.LocationListPage;
+
+public class LocationListPageController : PageController<LocationListPage>
 {
-    public class LocationListPageController : PageController<LocationListPage>
+    private readonly IContentLoader _contentLoader;
+
+    public LocationListPageController(IContentLoader contentLoader)
     {
-        private readonly IContentLoader _contentLoader;
+        _contentLoader = contentLoader;
+    }
 
-        public LocationListPageController(IContentLoader contentLoader)
+    public ActionResult Index(LocationListPage currentPage)
+    {
+        var query = SearchClient.Instance.Search<LocationItemPage.LocationItemPage>()
+            .PublishedInCurrentLanguage()
+            .FilterOnReadAccess()
+            .ExcludeDeleted();
+
+        if (currentPage.FilterArea != null)
         {
-            _contentLoader = contentLoader;
-        }
-
-        public ActionResult Index(LocationListPage currentPage)
-        {
-            var query = SearchClient.Instance.Search<LocationItemPage.LocationItemPage>()
-                .PublishedInCurrentLanguage()
-                .FilterOnReadAccess()
-                .ExcludeDeleted();
-
-            if (currentPage.FilterArea != null)
+            foreach (var filterBlock in currentPage.FilterArea.FilteredItems)
             {
-                foreach (var filterBlock in currentPage.FilterArea.FilteredItems)
+                var b = _contentLoader.Get<BlockData>(filterBlock.ContentLink) as IFilterBlock;
+                if (b != null)
                 {
-                    var b = _contentLoader.Get<BlockData>(filterBlock.ContentLink) as IFilterBlock;
-                    if (b != null)
-                    {
-                        query = b.AddFilter(query);
-                    }
-                }
-
-                foreach (var filterBlock in currentPage.FilterArea.FilteredItems)
-                {
-                    var b = _contentLoader.Get<BlockData>(filterBlock.ContentLink) as IFilterBlock;
-                    if (b != null)
-                    {
-                        query = b.ApplyFilter(query, Request.Query);
-                    }
+                    query = b.AddFilter(query);
                 }
             }
 
-            var locations = query.OrderBy(x => x.PageName)
-                                    .Take(500)
-                                    .StaticallyCacheFor(new System.TimeSpan(0, 1, 0)).GetContentResult();
-
-            var model = new LocationListViewModel(currentPage)
+            foreach (var filterBlock in currentPage.FilterArea.FilteredItems)
             {
-                Locations = locations,
-                MapCenter = GetMapCenter(),
-                UserLocation = GeoPosition.GetUsersLocation(),
-                QueryString = Request.Query
-            };
-
-            return View(model);
-        }
-
-        private static GeoCoordinate GetMapCenter()
-        {
-            var userLocation = GeoPosition.GetUsersPosition();
-            if (userLocation != null)
-            {
-                return new GeoCoordinate(30, userLocation.Longitude);
+                var b = _contentLoader.Get<BlockData>(filterBlock.ContentLink) as IFilterBlock;
+                if (b != null)
+                {
+                    query = b.ApplyFilter(query, Request.Query);
+                }
             }
-            return new GeoCoordinate(30, 0);
         }
+
+        var locations = query.OrderBy(x => x.PageName)
+            .Take(500)
+            .StaticallyCacheFor(new System.TimeSpan(0, 1, 0)).GetContentResult();
+
+        var model = new LocationListViewModel(currentPage)
+        {
+            Locations = locations,
+            MapCenter = GetMapCenter(),
+            UserLocation = GeoPosition.GetUsersLocation(),
+            QueryString = Request.Query
+        };
+
+        return View(model);
+    }
+
+    private static GeoCoordinate GetMapCenter()
+    {
+        var userLocation = GeoPosition.GetUsersPosition();
+        if (userLocation != null)
+        {
+            return new GeoCoordinate(30, userLocation.Longitude);
+        }
+        return new GeoCoordinate(30, 0);
     }
 }

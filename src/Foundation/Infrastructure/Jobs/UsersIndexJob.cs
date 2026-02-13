@@ -6,92 +6,91 @@ using Foundation.Features.MyOrganization.Users;
 using Foundation.Infrastructure.Commerce.Customer;
 using Foundation.Infrastructure.Commerce.Customer.Services;
 
-namespace Foundation.Infrastructure.Jobs
+namespace Foundation.Infrastructure.Jobs;
+
+[ScheduledPlugIn(
+    DisplayName = "Users Index Job",
+    Description = "Index users in the database ",
+    SortIndex = 1)]
+[ServiceConfiguration]
+public class UsersIndexJob : ScheduledJobBase
 {
-    [ScheduledPlugIn(
-        DisplayName = "Users Index Job",
-        Description = "Index users in the database ",
-        SortIndex = 1)]
-    [ServiceConfiguration]
-    public class UsersIndexJob : ScheduledJobBase
+    private readonly int _batchSize = 500;
+
+    public UsersIndexJob()
     {
-        private readonly int _batchSize = 500;
+        IsStoppable = false;
+    }
 
-        public UsersIndexJob()
+    public Injected<ILogger> Logger { get; set; }
+    public Injected<ICustomerService> CustomerService { get; set; }
+    public Injected<IClient> Find { get; set; }
+
+    public override string Execute()
+    {
+        OnStatusChanged("Started execution.");
+
+        try
         {
-            IsStoppable = false;
+            IndexContacts();
+
+            return "Done";
         }
-
-        public Injected<ILogger> Logger { get; set; }
-        public Injected<ICustomerService> CustomerService { get; set; }
-        public Injected<IClient> Find { get; set; }
-
-        public override string Execute()
+        catch (Exception ex)
         {
-            OnStatusChanged("Started execution.");
+            Logger.Service.Log(Level.Critical, ex.Message, ex);
+            throw new Exception("Error: " + ex.Message);
+        }
+    }
+
+    private void IndexContacts()
+    {
+        var batchNumber = 0;
+        List<FoundationContact> contacts;
+
+        do
+        {
+            contacts = ReadContacts(batchNumber);
+
+            var contactsToIndex = new List<UserSearchResultModel>(batchNumber);
+            contactsToIndex.AddRange(contacts.Select(ConvertToUserSearchResultModel));
 
             try
             {
-                IndexContacts();
-
-                return "Done";
+                if (contactsToIndex.Count > 0)
+                {
+                    Find.Service.Delete<UserSearchResultModel>(x => x.ContactId.Exists());
+                    Find.Service.Index(contactsToIndex);
+                }
             }
             catch (Exception ex)
             {
-                Logger.Service.Log(Level.Critical, ex.Message, ex);
-                throw new Exception("Error: " + ex.Message);
+                Logger.Service.Log(Level.Error, ex.Message, ex);
             }
-        }
 
-        private void IndexContacts()
+            var indexed = (batchNumber * _batchSize) + contacts.Count;
+            OnStatusChanged($"Indexed {indexed} contacts");
+            batchNumber++;
+        } while (contacts.Count > 0);
+    }
+
+    private UserSearchResultModel ConvertToUserSearchResultModel(FoundationContact contact)
+    {
+        return new UserSearchResultModel
         {
-            var batchNumber = 0;
-            List<FoundationContact> contacts;
+            ContactId = contact.ContactId,
+            Email = contact.Email,
+            FirstName = contact.FirstName,
+            LastName = contact.LastName,
+            FullName = contact.FullName
+        };
+    }
 
-            do
-            {
-                contacts = ReadContacts(batchNumber);
-
-                var contactsToIndex = new List<UserSearchResultModel>(batchNumber);
-                contactsToIndex.AddRange(contacts.Select(ConvertToUserSearchResultModel));
-
-                try
-                {
-                    if (contactsToIndex.Count > 0)
-                    {
-                        Find.Service.Delete<UserSearchResultModel>(x => x.ContactId.Exists());
-                        Find.Service.Index(contactsToIndex);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Logger.Service.Log(Level.Error, ex.Message, ex);
-                }
-
-                var indexed = (batchNumber * _batchSize) + contacts.Count;
-                OnStatusChanged($"Indexed {indexed} contacts");
-                batchNumber++;
-            } while (contacts.Count > 0);
-        }
-
-        private UserSearchResultModel ConvertToUserSearchResultModel(FoundationContact contact)
-        {
-            return new UserSearchResultModel
-            {
-                ContactId = contact.ContactId,
-                Email = contact.Email,
-                FirstName = contact.FirstName,
-                LastName = contact.LastName,
-                FullName = contact.FullName
-            };
-        }
-
-        private List<FoundationContact> ReadContacts(int batchNumber)
-        {
-            return CustomerService.Service.GetContacts()
-                .OrderBy(x => x.ContactId)
-                .Skip(_batchSize * batchNumber)
-                .Take(_batchSize).ToList();
-        }
+    private List<FoundationContact> ReadContacts(int batchNumber)
+    {
+        return CustomerService.Service.GetContacts()
+            .OrderBy(x => x.ContactId)
+            .Skip(_batchSize * batchNumber)
+            .Take(_batchSize).ToList();
     }
 }

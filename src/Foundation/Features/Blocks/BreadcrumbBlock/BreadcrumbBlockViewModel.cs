@@ -1,35 +1,34 @@
-﻿namespace Foundation.Features.Blocks.BreadcrumbBlock
-{
-    public class BreadcrumbBlockViewModel : BlockViewModel<BreadcrumbBlock>
-    {
-        public BreadcrumbBlockViewModel(BreadcrumbBlock currentBlock) : base(currentBlock)
-        {
-            Breadcrumb = new List<BreadcrumbItem>();
-        }
+﻿namespace Foundation.Features.Blocks.BreadcrumbBlock;
 
-        public List<BreadcrumbItem> Breadcrumb { get; set; }
+public class BreadcrumbBlockViewModel : BlockViewModel<BreadcrumbBlock>
+{
+    public BreadcrumbBlockViewModel(BreadcrumbBlock currentBlock) : base(currentBlock)
+    {
+        Breadcrumb = new List<BreadcrumbItem>();
     }
 
-    public class BreadcrumbItem
-    {
-        public string Name { get; set; }
-        public string Url { get; set; }
-        public PageData PageData { get; set; }
+    public List<BreadcrumbItem> Breadcrumb { get; set; }
+}
 
-        public BreadcrumbItem(PageData page, IUrlHelper urlHelper)
+public class BreadcrumbItem
+{
+    public string Name { get; set; }
+    public string Url { get; set; }
+    public PageData PageData { get; set; }
+
+    public BreadcrumbItem(PageData page, IUrlHelper urlHelper)
+    {
+        if (page != null)
         {
-            if (page != null)
-            {
-                Name = page.Name;
-                Url = urlHelper.ContentUrl(page.ContentLink);
-                PageData = page;
-            }
-            else
-            {
-                Name = string.Empty;
-                Url = string.Empty;
-                PageData = null;
-            }
+            Name = page.Name;
+            Url = urlHelper.ContentUrl(page.ContentLink);
+            PageData = page;
+        }
+        else
+        {
+            Name = string.Empty;
+            Url = string.Empty;
+            PageData = null;
         }
     }
 }

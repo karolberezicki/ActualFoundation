@@ -1,19 +1,18 @@
-﻿namespace Foundation.Features.Events.CalendarBlock
+﻿namespace Foundation.Features.Events.CalendarBlock;
+
+public class CalendarBlockComponent : AsyncBlockComponent<CalendarBlock>
 {
-    public class CalendarBlockComponent : AsyncBlockComponent<CalendarBlock>
+    private readonly IContentLoader _contentLoader;
+
+    public CalendarBlockComponent(IContentLoader contentLoader)
     {
-        private readonly IContentLoader _contentLoader;
+        _contentLoader = contentLoader;
+    }
 
-        public CalendarBlockComponent(IContentLoader contentLoader)
-        {
-            _contentLoader = contentLoader;
-        }
+    protected override async Task<IViewComponentResult> InvokeComponentAsync(CalendarBlock currentBlock)
+    {
+        var model = new CalendarBlockViewModel(currentBlock);
 
-        protected override async Task<IViewComponentResult> InvokeComponentAsync(CalendarBlock currentBlock)
-        {
-            var model = new CalendarBlockViewModel(currentBlock);
-
-            return await Task.FromResult(View("~/Features/Events/CalendarBlock/index.cshtml", model));
-        }
+        return await Task.FromResult(View("~/Features/Events/CalendarBlock/index.cshtml", model));
     }
 }

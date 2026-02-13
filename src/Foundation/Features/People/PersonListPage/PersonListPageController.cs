@@ -6,62 +6,61 @@ using Foundation.Infrastructure.Cms;
 using Foundation.Infrastructure.Cms.Settings;
 using Foundation.Infrastructure.Find;
 
-namespace Foundation.Features.People.PersonListPage
+namespace Foundation.Features.People.PersonListPage;
+
+public class PersonListPageController : PageController<PersonList>
 {
-    public class PersonListPageController : PageController<PersonList>
+    private readonly ISettingsService _settingsService;
+
+    public PersonListPageController(ISettingsService settingsService)
     {
-        private readonly ISettingsService _settingsService;
+        _settingsService = settingsService;
+    }
 
-        public PersonListPageController(ISettingsService settingsService)
+    public ActionResult Index(PersonList currentPage)
+    {
+        var queryString = Request.Query;
+        var query = SearchClient.Instance.Search<PersonPage>();
+
+        if (!string.IsNullOrWhiteSpace(queryString["name"].ToString()))
         {
-            _settingsService = settingsService;
+            query = query.AddWildCardQuery(queryString["name"].ToString(), x => x.Name);
         }
 
-        public ActionResult Index(PersonList currentPage)
+        if (!string.IsNullOrWhiteSpace(queryString["sector"].ToString()))
         {
-            var queryString = Request.Query;
-            var query = SearchClient.Instance.Search<PersonPage>();
-
-            if (!string.IsNullOrWhiteSpace(queryString["name"].ToString()))
-            {
-                query = query.AddWildCardQuery(queryString["name"].ToString(), x => x.Name);
-            }
-
-            if (!string.IsNullOrWhiteSpace(queryString["sector"].ToString()))
-            {
-                query = query.Filter(x => x.Sector.Match(queryString["sector"].ToString()));
-            }
-
-            if (!string.IsNullOrWhiteSpace(queryString["location"].ToString()))
-            {
-                query = query.Filter(x => x.Location.Match(queryString["location"].ToString()));
-            }
-
-            var persons = query.OrderBy(x => x.PageName)
-                                    .Take(500)
-                                    .GetContentResult();
-
-            var settingPage = _settingsService.GetSiteSettings<CollectionSettings>();
-
-            var model = new PersonListViewModel(currentPage)
-            {
-                Persons = persons,
-                Sectors = settingPage?.Sectors?.OrderBy(x => x.Text).ToList() ?? new List<SelectionItem>(),
-                Locations = settingPage?.Locations?.OrderBy(x => x.Text).ToList() ?? new List<SelectionItem>(),
-                Names = GetNames(persons)
-            };
-
-            return View(model);
+            query = query.Filter(x => x.Sector.Match(queryString["sector"].ToString()));
         }
 
-        public List<string> GetNames(IContentResult<PersonPage> persons)
+        if (!string.IsNullOrWhiteSpace(queryString["location"].ToString()))
         {
-            var lstNames = new List<string>();
-            foreach (var person in persons)
-            {
-                lstNames.Add(person.Name);
-            }
-            return lstNames.Distinct().OrderBy(x => x).ToList();
+            query = query.Filter(x => x.Location.Match(queryString["location"].ToString()));
         }
+
+        var persons = query.OrderBy(x => x.PageName)
+            .Take(500)
+            .GetContentResult();
+
+        var settingPage = _settingsService.GetSiteSettings<CollectionSettings>();
+
+        var model = new PersonListViewModel(currentPage)
+        {
+            Persons = persons,
+            Sectors = settingPage?.Sectors?.OrderBy(x => x.Text).ToList() ?? new List<SelectionItem>(),
+            Locations = settingPage?.Locations?.OrderBy(x => x.Text).ToList() ?? new List<SelectionItem>(),
+            Names = GetNames(persons)
+        };
+
+        return View(model);
+    }
+
+    public List<string> GetNames(IContentResult<PersonPage> persons)
+    {
+        var lstNames = new List<string>();
+        foreach (var person in persons)
+        {
+            lstNames.Add(person.Name);
+        }
+        return lstNames.Distinct().OrderBy(x => x).ToList();
     }
 }

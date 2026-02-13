@@ -1,17 +1,16 @@
-namespace Foundation.Features.Checkout.ViewModels
+namespace Foundation.Features.Checkout.ViewModels;
+
+public abstract class CartViewModelBase<T> : ContentViewModel<T> where T : IContent
 {
-    public abstract class CartViewModelBase<T> : ContentViewModel<T> where T : IContent
+    protected CartViewModelBase(T content) : base(content)
     {
-        protected CartViewModelBase(T content) : base(content)
-        {
-        }
-
-        public decimal ItemCount { get; set; }
-
-        public IEnumerable<CartItemViewModel> CartItems { get; set; }
-
-        public Money Total { get; set; }
-
-        public bool HasOrganization { get; set; }
     }
+
+    public decimal ItemCount { get; set; }
+
+    public IEnumerable<CartItemViewModel> CartItems { get; set; }
+
+    public Money Total { get; set; }
+
+    public bool HasOrganization { get; set; }
 }

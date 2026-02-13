@@ -6,98 +6,97 @@ using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace Foundation.Features.Blog.BlogItemPage
+namespace Foundation.Features.Blog.BlogItemPage;
+
+public class BlogItemPageController : PageController<BlogItemPage>
 {
-    public class BlogItemPageController : PageController<BlogItemPage>
+    private readonly BlogTagFactory _blogTagFactory;
+    private readonly IContentLoader _contentLoader;
+    private readonly UrlResolver _urlResolver;
+
+    public int PreviewTextLength { get; set; }
+
+    public BlogItemPageController(BlogTagFactory blogTagFactory,
+        IContentLoader contentLoader,
+        UrlResolver urlResolver)
     {
-        private readonly BlogTagFactory _blogTagFactory;
-        private readonly IContentLoader _contentLoader;
-        private readonly UrlResolver _urlResolver;
+        _blogTagFactory = blogTagFactory;
+        _contentLoader = contentLoader;
+        _urlResolver = urlResolver;
+    }
 
-        public int PreviewTextLength { get; set; }
+    public ActionResult Index(BlogItemPage currentPage)
+    {
+        PreviewTextLength = 200;
 
-        public BlogItemPageController(BlogTagFactory blogTagFactory,
-            IContentLoader contentLoader,
-            UrlResolver urlResolver)
+        var model = new BlogItemPageViewModel(currentPage)
         {
-            _blogTagFactory = blogTagFactory;
-            _contentLoader = contentLoader;
-            _urlResolver = urlResolver;
+            Category = currentPage.Category,
+            Tags = GetTags(currentPage),
+            PreviewText = GetPreviewText(currentPage),
+            MainBody = currentPage.MainBody,
+            StartPublish = currentPage.StartPublish ?? DateTime.UtcNow,
+            BreadCrumbs = GetBreadCrumb(currentPage)
+        };
+
+        var editHints = ViewData.GetEditHints<ContentViewModel<BlogItemPage>, BlogItemPage>();
+        editHints.AddConnection(m => m.CurrentContent.Category, p => p.Category);
+        editHints.AddConnection(m => m.CurrentContent.StartPublish, p => p.StartPublish);
+
+        return View(model);
+    }
+
+    public IEnumerable<BlogItemPageViewModel.TagItem> GetTags(BlogItemPage currentPage)
+    {
+        if (currentPage.Categories != null)
+        {
+            var allCategories = _contentLoader.GetItems(currentPage.Categories, CultureInfo.CurrentUICulture);
+            return allCategories
+                .Select(cat => new BlogItemPageViewModel.TagItem()
+                {
+                    Title = cat.Name,
+                    Url = _blogTagFactory.GetTagUrl(currentPage, cat.ContentLink),
+                    DisplayName = (cat as StandardCategory)?.Description,
+                }).ToList();
+        }
+        return new List<BlogItemPageViewModel.TagItem>();
+    }
+
+    private string GetPreviewText(BlogItemPage page)
+    {
+        if (PreviewTextLength <= 0)
+        {
+            return string.Empty;
         }
 
-        public ActionResult Index(BlogItemPage currentPage)
+        var previewText = string.Empty;
+
+        if (page.MainBody != null)
         {
-            PreviewTextLength = 200;
-
-            var model = new BlogItemPageViewModel(currentPage)
-            {
-                Category = currentPage.Category,
-                Tags = GetTags(currentPage),
-                PreviewText = GetPreviewText(currentPage),
-                MainBody = currentPage.MainBody,
-                StartPublish = currentPage.StartPublish ?? DateTime.UtcNow,
-                BreadCrumbs = GetBreadCrumb(currentPage)
-            };
-
-            var editHints = ViewData.GetEditHints<ContentViewModel<BlogItemPage>, BlogItemPage>();
-            editHints.AddConnection(m => m.CurrentContent.Category, p => p.Category);
-            editHints.AddConnection(m => m.CurrentContent.StartPublish, p => p.StartPublish);
-
-            return View(model);
+            previewText = page.MainBody.ToHtmlString();
         }
 
-        public IEnumerable<BlogItemPageViewModel.TagItem> GetTags(BlogItemPage currentPage)
+        if (string.IsNullOrEmpty(previewText))
         {
-            if (currentPage.Categories != null)
-            {
-                var allCategories = _contentLoader.GetItems(currentPage.Categories, CultureInfo.CurrentUICulture);
-                return allCategories
-                    .Select(cat => new BlogItemPageViewModel.TagItem()
-                    {
-                        Title = cat.Name,
-                        Url = _blogTagFactory.GetTagUrl(currentPage, cat.ContentLink),
-                        DisplayName = (cat as StandardCategory)?.Description,
-                    }).ToList();
-            }
-            return new List<BlogItemPageViewModel.TagItem>();
+            return string.Empty;
         }
 
-        private string GetPreviewText(BlogItemPage page)
-        {
-            if (PreviewTextLength <= 0)
-            {
-                return string.Empty;
-            }
+        var regexPattern = new StringBuilder(@"<span[\s\W\w]*?classid=""");
+        //regexPattern.Append(DynamicContentFactory.Instance.DynamicContentId.ToString());
+        regexPattern.Append(@"""[\s\W\w]*?</span>");
+        previewText = Regex.Replace(previewText, regexPattern.ToString(), string.Empty, RegexOptions.IgnoreCase | RegexOptions.Multiline);
 
-            var previewText = string.Empty;
+        return previewText.StripHtml().Truncate(PreviewTextLength);
+    }
 
-            if (page.MainBody != null)
-            {
-                previewText = page.MainBody.ToHtmlString();
-            }
+    private List<KeyValuePair<string, string>> GetBreadCrumb(BlogItemPage currentPage)
+    {
+        var breadCrumb = new List<KeyValuePair<string, string>>();
+        var ancestors = _contentLoader.GetAncestors(currentPage.ContentLink)
+            .Select(x => x as BlogListPage.BlogListPage)
+            .Where(x => x != null);
+        breadCrumb = ancestors.Reverse().Select(x => new KeyValuePair<string, string>(x.MetaTitle, x.PublicUrl(_urlResolver))).ToList();
 
-            if (string.IsNullOrEmpty(previewText))
-            {
-                return string.Empty;
-            }
-
-            var regexPattern = new StringBuilder(@"<span[\s\W\w]*?classid=""");
-            //regexPattern.Append(DynamicContentFactory.Instance.DynamicContentId.ToString());
-            regexPattern.Append(@"""[\s\W\w]*?</span>");
-            previewText = Regex.Replace(previewText, regexPattern.ToString(), string.Empty, RegexOptions.IgnoreCase | RegexOptions.Multiline);
-
-            return previewText.StripHtml().Truncate(PreviewTextLength);
-        }
-
-        private List<KeyValuePair<string, string>> GetBreadCrumb(BlogItemPage currentPage)
-        {
-            var breadCrumb = new List<KeyValuePair<string, string>>();
-            var ancestors = _contentLoader.GetAncestors(currentPage.ContentLink)
-                .Select(x => x as BlogListPage.BlogListPage)
-                .Where(x => x != null);
-            breadCrumb = ancestors.Reverse().Select(x => new KeyValuePair<string, string>(x.MetaTitle, x.PublicUrl(_urlResolver))).ToList();
-
-            return breadCrumb;
-        }
+        return breadCrumb;
     }
 }

@@ -1,55 +1,54 @@
 ﻿using Mediachase.Commerce.Customers;
 using Newtonsoft.Json;
 
-namespace Foundation.Infrastructure.Commerce.GiftCard
+namespace Foundation.Infrastructure.Commerce.GiftCard;
+
+public class GiftCardManagerController : Controller
 {
-    public class GiftCardManagerController : Controller
+    private readonly IGiftCardService _giftCardService;
+
+    public GiftCardManagerController(IGiftCardService giftCardService)
     {
-        private readonly IGiftCardService _giftCardService;
+        _giftCardService = giftCardService;
+    }
 
-        public GiftCardManagerController(IGiftCardService giftCardService)
+    [HttpGet]
+    //[MenuItem("/global/extensions/giftcards", TextResourceKey = "/Shared/GiftCards", SortIndex = 300)]
+    public ActionResult Index() => View();
+
+    [HttpGet]
+    public ContentResult GetAllGiftCards()
+    {
+        var data = _giftCardService.GetAllGiftCards();
+        return new ContentResult
         {
-            _giftCardService = giftCardService;
-        }
+            Content = JsonConvert.SerializeObject(data),
+            ContentType = "application/json"
+        };
+    }
 
-        [HttpGet]
-        //[MenuItem("/global/extensions/giftcards", TextResourceKey = "/Shared/GiftCards", SortIndex = 300)]
-        public ActionResult Index() => View();
+    [HttpPost]
+    public string AddGiftCard(GiftCard giftCard) => _giftCardService.CreateGiftCard(giftCard);
 
-        [HttpGet]
-        public ContentResult GetAllGiftCards()
+    [HttpPost]
+    public string UpdateGiftCard(GiftCard giftCard) => _giftCardService.UpdateGiftCard(giftCard);
+
+    [HttpPost]
+    public string DeleteGiftCard(string giftCardId) => _giftCardService.DeleteGiftCard(giftCardId);
+
+    [HttpGet]
+    public ContentResult GetAllContacts()
+    {
+        var data = CustomerContext.Current.GetContacts(0, 1000).Select(c => new
         {
-            var data = _giftCardService.GetAllGiftCards();
-            return new ContentResult
-            {
-                Content = JsonConvert.SerializeObject(data),
-                ContentType = "application/json"
-            };
-        }
+            ContactId = c.PrimaryKeyId.ToString(),
+            ContactName = c.FullName
+        });
 
-        [HttpPost]
-        public string AddGiftCard(GiftCard giftCard) => _giftCardService.CreateGiftCard(giftCard);
-
-        [HttpPost]
-        public string UpdateGiftCard(GiftCard giftCard) => _giftCardService.UpdateGiftCard(giftCard);
-
-        [HttpPost]
-        public string DeleteGiftCard(string giftCardId) => _giftCardService.DeleteGiftCard(giftCardId);
-
-        [HttpGet]
-        public ContentResult GetAllContacts()
+        return new ContentResult
         {
-            var data = CustomerContext.Current.GetContacts(0, 1000).Select(c => new
-            {
-                ContactId = c.PrimaryKeyId.ToString(),
-                ContactName = c.FullName
-            });
-
-            return new ContentResult
-            {
-                Content = JsonConvert.SerializeObject(data),
-                ContentType = "application/json"
-            };
-        }
+            Content = JsonConvert.SerializeObject(data),
+            ContentType = "application/json"
+        };
     }
 }

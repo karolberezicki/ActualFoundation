@@ -7,99 +7,98 @@ using Mediachase.Commerce.InventoryService;
 using System.Data;
 using System.Globalization;
 
-namespace Foundation.Infrastructure.Jobs
+namespace Foundation.Infrastructure.Jobs;
+
+[ScheduledPlugIn(DisplayName = "Demo Integration Job", GUID = "6DDF8B1A-2BAE-4492-AB21-777C70634D9F")]
+[ServiceConfiguration]
+public class DemoIntegrationJob : ScheduledJobBase
 {
-    [ScheduledPlugIn(DisplayName = "Demo Integration Job", GUID = "6DDF8B1A-2BAE-4492-AB21-777C70634D9F")]
-    [ServiceConfiguration]
-    public class DemoIntegrationJob : ScheduledJobBase
+    private bool _stopSignaled;
+    private readonly IInventoryService _inventoryService;
+    private readonly IWarehouseRepository _warehouseRepository;
+    private readonly IContentRepository _contentRepository;
+    private readonly ReferenceConverter _referenceConverter;
+
+    public DemoIntegrationJob(IInventoryService inventoryService,
+        IWarehouseRepository warehouseRepository, IContentRepository contentRepository, ReferenceConverter referenceConverter)
     {
-        private bool _stopSignaled;
-        private readonly IInventoryService _inventoryService;
-        private readonly IWarehouseRepository _warehouseRepository;
-        private readonly IContentRepository _contentRepository;
-        private readonly ReferenceConverter _referenceConverter;
+        _inventoryService = inventoryService;
+        _warehouseRepository = warehouseRepository;
+        IsStoppable = true;
+        _contentRepository = contentRepository;
+        _referenceConverter = referenceConverter;
+    }
 
-        public DemoIntegrationJob(IInventoryService inventoryService,
-            IWarehouseRepository warehouseRepository, IContentRepository contentRepository, ReferenceConverter referenceConverter)
+    /// <summary>
+    /// Called when a user clicks on Stop for a manually started job, or when ASP.NET shuts down.
+    /// </summary>
+    public override void Stop() => _stopSignaled = true;
+
+    /// <summary>
+    /// Called when a scheduled job executes
+    /// </summary>
+    /// <returns>A status message to be stored in the database log and visible from admin mode</returns>
+    public override string Execute()
+    {
+        //Call OnStatusChanged to periodically notify progress of job for manually started jobs
+        OnStatusChanged(string.Format("Starting execution of {0}", GetType()));
+
+        //Add implementation
+        UpdateAllCatalogContent();
+        //For long running jobs periodically check if stop is signaled and if so stop execution
+        if (_stopSignaled)
         {
-            _inventoryService = inventoryService;
-            _warehouseRepository = warehouseRepository;
-            IsStoppable = true;
-            _contentRepository = contentRepository;
-            _referenceConverter = referenceConverter;
+            return "Stop of job was called";
         }
 
-        /// <summary>
-        /// Called when a user clicks on Stop for a manually started job, or when ASP.NET shuts down.
-        /// </summary>
-        public override void Stop() => _stopSignaled = true;
+        return "Change to message that describes outcome of execution";
+    }
 
-        /// <summary>
-        /// Called when a scheduled job executes
-        /// </summary>
-        /// <returns>A status message to be stored in the database log and visible from admin mode</returns>
-        public override string Execute()
+    private void UpdateAllCatalogContent()
+    {
+        foreach (var catalog in _contentRepository.GetChildren<CatalogContent>(_referenceConverter.GetRootLink()))
         {
-            //Call OnStatusChanged to periodically notify progress of job for manually started jobs
-            OnStatusChanged(string.Format("Starting execution of {0}", GetType()));
+            UpdateCatalogContentRecursive(catalog.ContentLink, new CultureInfo("en"));
+        }
+    }
 
-            //Add implementation
-            UpdateAllCatalogContent();
-            //For long running jobs periodically check if stop is signaled and if so stop execution
-            if (_stopSignaled)
+    private void UpdateCatalogContentRecursive(ContentReference parentLink, CultureInfo defaultCulture)
+    {
+        foreach (var child in LoadChildrenBatched(parentLink, defaultCulture))
+        {
+            ((IProductRecommendations)child).ShowRecommendations = true;
+            _contentRepository.Save(child, EPiServer.DataAccess.SaveAction.Publish, AccessLevel.NoAccess);
+
+            UpdateCatalogContentRecursive(child.ContentLink, defaultCulture);
+        }
+    }
+
+    private IEnumerable<CatalogContentBase> LoadChildrenBatched(ContentReference parentLink, CultureInfo defaultCulture)
+    {
+        var start = 0;
+
+        while (true)
+        {
+            var batch = _contentRepository.GetChildren<CatalogContentBase>(parentLink, defaultCulture, start, 100)
+                .Where(x => x is IProductRecommendations)
+                .Select(x => x.CreateWritableClone());
+
+            if (!batch.Any())
             {
-                return "Stop of job was called";
+                yield break;
             }
 
-            return "Change to message that describes outcome of execution";
-        }
-
-        private void UpdateAllCatalogContent()
-        {
-            foreach (var catalog in _contentRepository.GetChildren<CatalogContent>(_referenceConverter.GetRootLink()))
+            foreach (var content in batch)
             {
-                UpdateCatalogContentRecursive(catalog.ContentLink, new CultureInfo("en"));
-            }
-        }
-
-        private void UpdateCatalogContentRecursive(ContentReference parentLink, CultureInfo defaultCulture)
-        {
-            foreach (var child in LoadChildrenBatched(parentLink, defaultCulture))
-            {
-                ((IProductRecommendations)child).ShowRecommendations = true;
-                _contentRepository.Save(child, EPiServer.DataAccess.SaveAction.Publish, AccessLevel.NoAccess);
-
-                UpdateCatalogContentRecursive(child.ContentLink, defaultCulture);
-            }
-        }
-
-        private IEnumerable<CatalogContentBase> LoadChildrenBatched(ContentReference parentLink, CultureInfo defaultCulture)
-        {
-            var start = 0;
-
-            while (true)
-            {
-                var batch = _contentRepository.GetChildren<CatalogContentBase>(parentLink, defaultCulture, start, 100)
-                    .Where(x => x is IProductRecommendations)
-                    .Select(x => x.CreateWritableClone());
-
-                if (!batch.Any())
+                // Don't include linked products to avoid including them multiple times when traversing the catalog
+                if (!parentLink.CompareToIgnoreWorkID(content.ParentLink))
                 {
-                    yield break;
+                    continue;
                 }
 
-                foreach (var content in batch)
-                {
-                    // Don't include linked products to avoid including them multiple times when traversing the catalog
-                    if (!parentLink.CompareToIgnoreWorkID(content.ParentLink))
-                    {
-                        continue;
-                    }
-
-                    yield return content;
-                }
-                start += 50;
+                yield return content;
             }
+            start += 50;
         }
     }
 }

@@ -1,8 +1,7 @@
-namespace Foundation.Features.CatalogContent
+namespace Foundation.Features.CatalogContent;
+
+public enum ElevatedRoles
 {
-    public enum ElevatedRoles
-    {
-        Nonuser,
-        Reader
-    }
+    Nonuser,
+    Reader
 }

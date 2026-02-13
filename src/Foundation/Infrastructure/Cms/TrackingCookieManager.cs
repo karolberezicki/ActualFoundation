@@ -1,30 +1,29 @@
-﻿namespace Foundation.Infrastructure.Cms
+﻿namespace Foundation.Infrastructure.Cms;
+
+public static class TrackingCookieManager
 {
-    public static class TrackingCookieManager
+    public static string TrackingCookieName = "_madid";
+
+    public static string GetTrackingCookie()
     {
-        public static string TrackingCookieName = "_madid";
-
-        public static string GetTrackingCookie()
+        var accessor = ServiceLocator.Current.GetInstance<IHttpContextAccessor>();
+        if (accessor.HttpContext == null)
         {
-            var accessor = ServiceLocator.Current.GetInstance<IHttpContextAccessor>();
-            if (accessor.HttpContext == null)
-            {
-                return string.Empty;
-            }
-
-            var cookie = accessor.HttpContext.Request.Cookies[TrackingCookieName];
-            return cookie == null ? string.Empty : cookie;
+            return string.Empty;
         }
 
-        public static void SetTrackingCookie(string value)
-        {
-            var accessor = ServiceLocator.Current.GetInstance<IHttpContextAccessor>();
-            if (accessor.HttpContext == null)
-            {
-                return;
-            }
+        var cookie = accessor.HttpContext.Request.Cookies[TrackingCookieName];
+        return cookie == null ? string.Empty : cookie;
+    }
 
-            accessor.HttpContext.Response.Cookies.Append(TrackingCookieName, value);
+    public static void SetTrackingCookie(string value)
+    {
+        var accessor = ServiceLocator.Current.GetInstance<IHttpContextAccessor>();
+        if (accessor.HttpContext == null)
+        {
+            return;
         }
+
+        accessor.HttpContext.Response.Cookies.Append(TrackingCookieName, value);
     }
 }

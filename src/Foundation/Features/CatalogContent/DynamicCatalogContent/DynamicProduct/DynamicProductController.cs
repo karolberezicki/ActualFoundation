@@ -3,47 +3,46 @@ using Foundation.Infrastructure.Cms;
 using Foundation.Infrastructure.Commerce.Customer.Services;
 using Foundation.Infrastructure.Personalization;
 
-namespace Foundation.Features.CatalogContent.DynamicCatalogContent.DynamicProduct
+namespace Foundation.Features.CatalogContent.DynamicCatalogContent.DynamicProduct;
+
+public class DynamicProductController : CatalogContentControllerBase<DynamicProduct>
 {
-    public class DynamicProductController : CatalogContentControllerBase<DynamicProduct>
+    private readonly bool _isInEditMode;
+    private readonly CatalogEntryViewModelFactory _viewModelFactory;
+
+    public DynamicProductController(IsInEditModeAccessor isInEditModeAccessor,
+        CatalogEntryViewModelFactory viewModelFactory,
+        //IReviewService reviewService,
+        //IReviewActivityService reviewActivityService,
+        ICommerceTrackingService recommendationService,
+        ReferenceConverter referenceConverter,
+        IContentLoader contentLoader,
+        UrlResolver urlResolver,
+        ILoyaltyService loyaltyService) : base(referenceConverter, contentLoader, urlResolver, /*reviewService, reviewActivityService,*/ recommendationService, loyaltyService)
     {
-        private readonly bool _isInEditMode;
-        private readonly CatalogEntryViewModelFactory _viewModelFactory;
+        _isInEditMode = isInEditModeAccessor();
+        _viewModelFactory = viewModelFactory;
+    }
 
-        public DynamicProductController(IsInEditModeAccessor isInEditModeAccessor,
-            CatalogEntryViewModelFactory viewModelFactory,
-            //IReviewService reviewService,
-            //IReviewActivityService reviewActivityService,
-            ICommerceTrackingService recommendationService,
-            ReferenceConverter referenceConverter,
-            IContentLoader contentLoader,
-            UrlResolver urlResolver,
-            ILoyaltyService loyaltyService) : base(referenceConverter, contentLoader, urlResolver, /*reviewService, reviewActivityService,*/ recommendationService, loyaltyService)
+    [HttpGet]
+    public async Task<ActionResult> Index(DynamicProduct currentContent, string variationCode = "", bool skipTracking = false)
+    {
+        var viewModel = _viewModelFactory.Create<DynamicProduct, DynamicVariant, DynamicProductViewModel>(currentContent, variationCode);
+
+        if (_isInEditMode && viewModel.Variant == null)
         {
-            _isInEditMode = isInEditModeAccessor();
-            _viewModelFactory = viewModelFactory;
+            return View(viewModel);
         }
 
-        [HttpGet]
-        public async Task<ActionResult> Index(DynamicProduct currentContent, string variationCode = "", bool skipTracking = false)
+        if (viewModel.Variant == null)
         {
-            var viewModel = _viewModelFactory.Create<DynamicProduct, DynamicVariant, DynamicProductViewModel>(currentContent, variationCode);
-
-            if (_isInEditMode && viewModel.Variant == null)
-            {
-                return View(viewModel);
-            }
-
-            if (viewModel.Variant == null)
-            {
-                return NotFound();
-            }
-
-            viewModel.GenerateVariantGroup();
-            await AddInfomationViewModel(viewModel, currentContent.Code, skipTracking);
-            currentContent.AddBrowseHistory();
-            viewModel.BreadCrumb = GetBreadCrumb(currentContent.Code);
-            return View("", viewModel);
+            return NotFound();
         }
+
+        viewModel.GenerateVariantGroup();
+        await AddInfomationViewModel(viewModel, currentContent.Code, skipTracking);
+        currentContent.AddBrowseHistory();
+        viewModel.BreadCrumb = GetBreadCrumb(currentContent.Code);
+        return View("", viewModel);
     }
 }

@@ -1,21 +1,20 @@
-﻿namespace Foundation.Infrastructure.Cms.Extensions
+﻿namespace Foundation.Infrastructure.Cms.Extensions;
+
+public static class ContentAreaItemExtensions
 {
-    public static class ContentAreaItemExtensions
+    private static readonly Lazy<IContentLoader> _contentLoader =
+        new Lazy<IContentLoader>(() => ServiceLocator.Current.GetInstance<IContentLoader>());
+
+    public static IList<T> GetContentItems<T>(this IEnumerable<ContentAreaItem> contentAreaItems) where T : IContentData
     {
-        private static readonly Lazy<IContentLoader> _contentLoader =
-            new Lazy<IContentLoader>(() => ServiceLocator.Current.GetInstance<IContentLoader>());
-
-        public static IList<T> GetContentItems<T>(this IEnumerable<ContentAreaItem> contentAreaItems) where T : IContentData
+        if (contentAreaItems == null || !contentAreaItems.Any())
         {
-            if (contentAreaItems == null || !contentAreaItems.Any())
-            {
-                return null;
-            }
-
-            return _contentLoader.Value
-                .GetItems(contentAreaItems.Select(_ => _.ContentLink), new LoaderOptions { LanguageLoaderOption.FallbackWithMaster() })
-                .OfType<T>()
-                .ToList();
+            return null;
         }
+
+        return _contentLoader.Value
+            .GetItems(contentAreaItems.Select(_ => _.ContentLink), new LoaderOptions { LanguageLoaderOption.FallbackWithMaster() })
+            .OfType<T>()
+            .ToList();
     }
 }

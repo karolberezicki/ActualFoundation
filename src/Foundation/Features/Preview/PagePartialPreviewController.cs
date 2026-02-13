@@ -4,84 +4,83 @@ using EPiServer.Framework.Web.Mvc;
 using Foundation.Features.Home;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 
-namespace Foundation.Features.Preview
+namespace Foundation.Features.Preview;
+
+[TemplateDescriptor(
+    Inherited = true,
+    Tags = new[] { PartialViewDisplayChannel.PartialViewDisplayChannelName },
+    AvailableWithoutTag = false)]
+[VisitorGroupImpersonation]
+[RequireClientResources]
+public class PagePartialPreviewController : PageController<PageData>
 {
-    [TemplateDescriptor(
-        Inherited = true,
-        Tags = new[] { PartialViewDisplayChannel.PartialViewDisplayChannelName },
-        AvailableWithoutTag = false)]
-    [VisitorGroupImpersonation]
-    [RequireClientResources]
-    public class PagePartialPreviewController : PageController<PageData>
+    private readonly IContentLoader _contentLoader;
+    private readonly TemplateResolver _templateResolver;
+    private readonly DisplayOptions _displayOptions;
+
+    public PagePartialPreviewController(IContentLoader contentLoader, TemplateResolver templateResolver, DisplayOptions displayOptions)
     {
-        private readonly IContentLoader _contentLoader;
-        private readonly TemplateResolver _templateResolver;
-        private readonly DisplayOptions _displayOptions;
+        _contentLoader = contentLoader;
+        _templateResolver = templateResolver;
+        _displayOptions = displayOptions;
+    }
 
-        public PagePartialPreviewController(IContentLoader contentLoader, TemplateResolver templateResolver, DisplayOptions displayOptions)
-        {
-            _contentLoader = contentLoader;
-            _templateResolver = templateResolver;
-            _displayOptions = displayOptions;
-        }
+    public ActionResult Index(IContent currentContent)
+    {
+        //As the layout requires a page for title etc we "borrow" the start page
+        var startPage = _contentLoader.Get<HomePage>(ContentReference.StartPage);
 
-        public ActionResult Index(IContent currentContent)
-        {
-            //As the layout requires a page for title etc we "borrow" the start page
-            var startPage = _contentLoader.Get<HomePage>(ContentReference.StartPage);
+        var model = new PreviewModel(startPage, currentContent);
 
-            var model = new PreviewModel(startPage, currentContent);
-
-            var supportedDisplayOptions = _displayOptions
-                .Select(x => new
-                {
-                    x.Tag,
-                    x.Name,
-                    Supported = SupportsTag(currentContent, x.Tag)
-                }).ToList();
-
-            if (!supportedDisplayOptions.Any(x => x.Supported))
+        var supportedDisplayOptions = _displayOptions
+            .Select(x => new
             {
-                return new ViewResult
-                {
-                    ViewName = "~/Features/Preview/Index.cshtml",
-                    ViewData = { Model = model }
-                };
-            }
-            foreach (var displayOption in supportedDisplayOptions)
-            {
-                var contentArea = new ContentArea();
-                contentArea.Items.Add(new ContentAreaItem
-                {
-                    ContentLink = currentContent.ContentLink
-                });
-                var areaModel = new PreviewModel.PreviewArea
-                {
-                    Supported = displayOption.Supported,
-                    AreaTag = displayOption.Tag,
-                    AreaName = displayOption.Name,
-                    ContentArea = contentArea
-                };
+                x.Tag,
+                x.Name,
+                Supported = SupportsTag(currentContent, x.Tag)
+            }).ToList();
 
-                model.Areas.Add(areaModel);
-            }
-
+        if (!supportedDisplayOptions.Any(x => x.Supported))
+        {
             return new ViewResult
             {
                 ViewName = "~/Features/Preview/Index.cshtml",
-                ViewData = new ViewDataDictionary<PreviewModel>(ViewData, model)
+                ViewData = { Model = model }
             };
         }
-
-        private bool SupportsTag(IContent content, string tag)
+        foreach (var displayOption in supportedDisplayOptions)
         {
-            var templateModel = _templateResolver.Resolve(HttpContext,
-                content.GetOriginalType(),
-                content,
-                TemplateTypeCategories.MvcPartial,
-                tag);
+            var contentArea = new ContentArea();
+            contentArea.Items.Add(new ContentAreaItem
+            {
+                ContentLink = currentContent.ContentLink
+            });
+            var areaModel = new PreviewModel.PreviewArea
+            {
+                Supported = displayOption.Supported,
+                AreaTag = displayOption.Tag,
+                AreaName = displayOption.Name,
+                ContentArea = contentArea
+            };
 
-            return templateModel != null;
+            model.Areas.Add(areaModel);
         }
+
+        return new ViewResult
+        {
+            ViewName = "~/Features/Preview/Index.cshtml",
+            ViewData = new ViewDataDictionary<PreviewModel>(ViewData, model)
+        };
+    }
+
+    private bool SupportsTag(IContent content, string tag)
+    {
+        var templateModel = _templateResolver.Resolve(HttpContext,
+            content.GetOriginalType(),
+            content,
+            TemplateTypeCategories.MvcPartial,
+            tag);
+
+        return templateModel != null;
     }
 }

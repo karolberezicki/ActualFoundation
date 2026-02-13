@@ -4,49 +4,48 @@ using Geta.Optimizely.Categories;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace Foundation.Features.Category
+namespace Foundation.Features.Category;
+
+public class StandardCategoryViewComponent : ViewComponent
 {
-    public class StandardCategoryViewComponent : ViewComponent
+    private readonly IContentLoader _contentLoader;
+    private const string ViewName = "~/Features/Category/_Preview.cshtml";
+
+    public StandardCategoryViewComponent(
+        IContentLoader contentLoader)
     {
-        private readonly IContentLoader _contentLoader;
-        private const string ViewName = "~/Features/Category/_Preview.cshtml";
+        _contentLoader = contentLoader;
+    }
 
-        public StandardCategoryViewComponent(
-            IContentLoader contentLoader)
+    public IViewComponentResult Invoke(FoundationPageData pageData)
+    {
+        var model = new CategoryFoundationPageViewModel(pageData)
         {
-            _contentLoader = contentLoader;
+            PreviewText = GetPreviewText(pageData),
+            Categories = pageData.Categories.Select(x => _contentLoader.Get<CategoryData>(x) as StandardCategory)
+        };
+        return View(ViewName, model);
+    }
+
+    private string GetPreviewText(FoundationPageData page)
+    {
+        var previewText = string.Empty;
+
+        if (page.MainBody != null)
+        {
+            previewText = page.MainBody.ToHtmlString();
         }
 
-        public IViewComponentResult Invoke(FoundationPageData pageData)
+        if (string.IsNullOrEmpty(previewText))
         {
-            var model = new CategoryFoundationPageViewModel(pageData)
-            {
-                PreviewText = GetPreviewText(pageData),
-                Categories = pageData.Categories.Select(x => _contentLoader.Get<CategoryData>(x) as StandardCategory)
-            };
-            return View(ViewName, model);
+            return string.Empty;
         }
 
-        private string GetPreviewText(FoundationPageData page)
-        {
-            var previewText = string.Empty;
+        var regexPattern = new StringBuilder(@"<span[\s\W\w]*?classid=""");
+        //regexPattern.Append(DynamicContentFactory.Instance.DynamicContentId.ToString());
+        regexPattern.Append(@"""[\s\W\w]*?</span>");
+        previewText = Regex.Replace(previewText, regexPattern.ToString(), string.Empty, RegexOptions.IgnoreCase | RegexOptions.Multiline);
 
-            if (page.MainBody != null)
-            {
-                previewText = page.MainBody.ToHtmlString();
-            }
-
-            if (string.IsNullOrEmpty(previewText))
-            {
-                return string.Empty;
-            }
-
-            var regexPattern = new StringBuilder(@"<span[\s\W\w]*?classid=""");
-            //regexPattern.Append(DynamicContentFactory.Instance.DynamicContentId.ToString());
-            regexPattern.Append(@"""[\s\W\w]*?</span>");
-            previewText = Regex.Replace(previewText, regexPattern.ToString(), string.Empty, RegexOptions.IgnoreCase | RegexOptions.Multiline);
-
-            return previewText.StripHtml().Truncate(200);
-        }
+        return previewText.StripHtml().Truncate(200);
     }
 }
