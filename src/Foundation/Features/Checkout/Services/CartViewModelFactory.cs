@@ -127,7 +127,6 @@ namespace Foundation.Features.Checkout.Services
                     Subtotal = zeroAmount,
                     ReferrerUrl = GetReferrerUrl(),
                     CheckoutPage = pageSettings?.CheckoutPage,
-                    //MultiShipmentPage = checkoutPage.MultiShipmentPage,
                     AppliedCouponCodes = Enumerable.Empty<string>(),
                     AddressModel = addressModel,
                     ShowRecommendations = true
@@ -149,7 +148,6 @@ namespace Foundation.Features.Checkout.Services
                 TaxTotal = totals.TaxTotal,
                 ReferrerUrl = GetReferrerUrl(),
                 CheckoutPage = pageSettings?.CheckoutPage,
-                //MultiShipmentPage = checkoutPage.MultiShipmentPage,
                 AppliedCouponCodes = cart.GetFirstForm().CouponCodes.Distinct(),
                 HasOrganization = contact?.OwnerId != null,
                 ShowRecommendations = cartPage != null ? cartPage.ShowRecommendations : true

@@ -93,8 +93,6 @@ namespace Foundation.Features.Checkout.ViewModels
 
             if (availableAddresses.Any())
             {
-                //viewModel.AvailableAddresses.Add(new AddressModel { Name = _localizationService.GetString("/Checkout/MultiShipment/SelectAddress"), AddressId = "" });
-
                 foreach (var address in availableAddresses)
                 {
                     viewModel.AvailableAddresses.Add(address);
@@ -102,7 +100,7 @@ namespace Foundation.Features.Checkout.ViewModels
             }
             else
             {
-                viewModel.AvailableAddresses.Add(new AddressModel { Name = _localizationService.GetString("/Checkout/MultiShipment/NoAddressFound"), AddressId = "" });
+                viewModel.AvailableAddresses.Add(new AddressModel { Name = _localizationService.GetString("/Checkout/NoAddressFound"), AddressId = "" });
             }
 
             SetDefaultShipmentAddress(viewModel, currentShippingAddressId);

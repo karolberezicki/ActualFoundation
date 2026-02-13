@@ -30,7 +30,7 @@ namespace Foundation.Features.Checkout
         private readonly ApplicationSignInManager<SiteUser> _applicationSignInManager;
         private readonly LocalizationService _localizationService;
         private readonly IAddressBookService _addressBookService;
-        private readonly MultiShipmentViewModelFactory _multiShipmentViewModelFactory;
+
         private readonly IOrderGroupFactory _orderGroupFactory;
         private readonly IContentLoader _contentLoader;
         private readonly UrlResolver _urlResolver;
@@ -51,7 +51,7 @@ namespace Foundation.Features.Checkout
             ApplicationSignInManager<SiteUser> applicationSignInManager,
             LocalizationService localizationService,
             IAddressBookService addressBookService,
-            MultiShipmentViewModelFactory multiShipmentViewModelFactory,
+
             IOrderGroupFactory orderGroupFactory,
             IContentLoader contentLoader,
             UrlResolver urlResolver,
@@ -72,7 +72,7 @@ namespace Foundation.Features.Checkout
             _applicationSignInManager = applicationSignInManager;
             _localizationService = localizationService;
             _addressBookService = addressBookService;
-            _multiShipmentViewModelFactory = multiShipmentViewModelFactory;
+
             _orderGroupFactory = orderGroupFactory;
             _contentLoader = contentLoader;
             _urlResolver = urlResolver;
@@ -771,29 +771,6 @@ namespace Foundation.Features.Checkout
             return PartialView("_AddPayment", model);
         }
 
-        [HttpPost]
-        public IActionResult SeparateShipment(CheckoutPage currentPage, [FromBody] RequestParamsToCart param)
-        {
-            var result = _cartService.SeparateShipment(CartWithValidationIssues.Cart, param.Code, (int)param.Quantity, param.ShipmentId, param.ToShipmentId, param.DeliveryMethodId, param.SelectedStore);
-
-            if (result.EntriesAddedToCart)
-            {
-                var model = CreateCheckoutViewModel(currentPage);
-                foreach (var payment in model.Payments)
-                {
-                    var paymentViewmodel = new CheckoutViewModel
-                    {
-                        Payment = payment
-                    };
-                    _checkoutService.RemovePaymentFromCart(CartWithValidationIssues.Cart, paymentViewmodel);
-                }
-                _orderRepository.Save(CartWithValidationIssues.Cart);
-
-                return Json(new { Status = true, RedirectUrl = Url.Action("Index") });
-            }
-
-            return Json(new { Status = false, Message = string.Join(", ", result.ValidationMessages) });
-        }
 
         public IActionResult OnPurchaseException(ExceptionContext filterContext)
         {

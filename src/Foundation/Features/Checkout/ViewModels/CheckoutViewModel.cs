@@ -9,8 +9,6 @@ namespace Foundation.Features.Checkout.ViewModels
     //[Bind(Exclude = "Payment")]
     public class CheckoutViewModel : ContentViewModel<CheckoutPage>
     {
-        public const string MultiShipmentCheckoutViewName = "MultiShipmentCheckout";
-
         public const string SingleShipmentCheckoutViewName = "SingleShipmentCheckout";
 
         public CheckoutViewModel()
@@ -82,7 +80,7 @@ namespace Foundation.Features.Checkout.ViewModels
         /// <summary>
         /// Gets the name of the checkout view required depending on the number of distinct shipping addresses.
         /// </summary>
-        public string ViewName => Shipments != null && Shipments.Count > 1 ? MultiShipmentCheckoutViewName : SingleShipmentCheckoutViewName;
+        public string ViewName => SingleShipmentCheckoutViewName;
 
         public ContactViewModel CurrentCustomer { get; set; }
         public string QuoteStatus { get; set; } = "";

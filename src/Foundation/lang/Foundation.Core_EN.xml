@@ -247,26 +247,8 @@
           <ZipCode>Zip code is required</ZipCode>
         </Empty>
       </Address>
-      <MultiShipment>
-        <Heading>Ship to multiple addresses</Heading>
-        <SubheadingFirst>Addresses need to be saved in your</SubheadingFirst>
-        <SubheadingAddress>address book</SubheadingAddress>
-        <SubheadingSecond>before being available.</SubheadingSecond>
-        <Item>Item</Item>
-        <Continue>Continue</Continue>
-        <DeliveryAddress>Delivery address</DeliveryAddress>
-        <SelectDeliveryAddress>Select delivery address</SelectDeliveryAddress>
-        <SelectAddress>Select address</SelectAddress>
-        <AddNewAddress>Add new address</AddNewAddress>
-        <DeliveryOption>Choose delivery option</DeliveryOption>
-        <NoAddressFound>No addresses exists</NoAddressFound>
-        <Empty>
-          <AddressId>Address is required</AddressId>
-        </Empty>
-        <ApplicableItems>Please select shipping address for applicable items</ApplicableItems>
-        <SendTo>Send to</SendTo>
-        <ContinueShippingInformation>Continue to Shipping Information</ContinueShippingInformation>
-      </MultiShipment>
+      <NoAddressFound>No addresses exists</NoAddressFound>
+      <DeliveryOption>Choose delivery option</DeliveryOption>
       <CheckoutMethod>
         <CheckoutGuestOrRegister>Checkout as a Guest or Register</CheckoutGuestOrRegister>
         <Convience>Register with us for future convenience:</Convience>

@@ -70,7 +70,7 @@ namespace Foundation.Infrastructure
             _services.AddSingleton<ISearchViewModelFactory, SearchViewModelFactory>();
             _services.AddSingleton<IPaymentService, PaymentService>();
             _services.AddTransient<CheckoutViewModelFactory>();
-            _services.AddSingleton<MultiShipmentViewModelFactory>();
+
             _services.AddSingleton<OrderSummaryViewModelFactory>();
             _services.AddTransient<PaymentMethodViewModelFactory>();
             _services.AddSingleton<IBookmarksService, BookmarksService>();

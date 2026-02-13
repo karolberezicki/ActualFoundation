@@ -70,13 +70,9 @@
 	  <EmbeddedResource Include="lang\**\*" />
 	  <None Update="App_Data\**" CopyToOutputDirectory="PreserveNewest" />
 	  <None Update="modules\_protected\Foundation\**" CopyToOutputDirectory="PreserveNewest" />
-	  <Compile Remove="Features\MultiShipment\**" />
 	  <Compile Remove="Infrastructure\Plugins\**" />
-	  <Content Remove="Features\MultiShipment\**" />
 	  <Content Remove="Infrastructure\Plugins\**" />
-	  <EmbeddedResource Remove="Features\MultiShipment\**" />
 	  <EmbeddedResource Remove="Infrastructure\Plugins\**" />
-	  <None Remove="Features\MultiShipment\**" />
 	  <Compile Remove="Infrastructure\Display\FoundationDisplayModeProvider.cs" />
 	  <Compile Remove="Infrastructure\Kpi\FilledInFormKpi.cs" />
 	  <Folder Include="Infrastructure\Kpi\" />

@@ -34,6 +34,5 @@ namespace Foundation.Features.Checkout.Services
         ICart PlaceOrderToCart(IPurchaseOrder purchaseOrder, ICart cart);
         void RemoveQuoteNumber(ICart cart);
         int PlaceCartForQuoteById(int orderId, Guid userId);
-        AddToCartResult SeparateShipment(ICart cart, string code, int quantity, int fromShipmentId, int toShipmentId, string deliveryMethodId, string warehouseCode);
     }
 }

@@ -55,22 +55,6 @@ namespace Foundation.Features.MyAccount.AddressBook
         }
 
         // Use NewAddress component
-        //[ChildActionOnly]
-        //public PartialViewResult AddNewAddress(string multiShipmentUrl)
-        //{
-        //    var referenceSettings = _settingsService.GetSiteSettings<ReferencePageSettings>();
-        //    var addressBookPage = _contentLoader.Get<PageData>(referenceSettings.AddressBookPage) as AddressBookPage;
-        //    var model = new AddressViewModel(addressBookPage)
-        //    {
-        //        Address = new AddressModel()
-        //    };
-        //    _addressBookService.LoadAddress(model.Address);
-        //    ViewData["IsInMultiShipment"] = true;
-        //    ViewData["MultiShipmentUrl"] = multiShipmentUrl;
-
-        //    return PartialView("EditAddress", model);
-        //}
-
         [HttpPost]
         [AllowAnonymous]
         public IActionResult GetRegionsForCountry(string countryCode, string region, string htmlPrefix)

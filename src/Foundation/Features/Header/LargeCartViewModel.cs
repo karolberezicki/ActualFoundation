@@ -31,8 +31,6 @@ namespace Foundation.Features.Header
 
         public ContentReference CheckoutPage { get; set; }
 
-        public ContentReference MultiShipmentPage { get; set; }
-
         public AddressModel AddressModel { get; set; }
 
         public IEnumerable<string> AppliedCouponCodes { get; set; }
