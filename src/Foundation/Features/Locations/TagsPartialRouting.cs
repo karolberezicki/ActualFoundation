@@ -19,10 +19,10 @@ public class TagsPartialRouting : IPartialRouter<TagPage.TagPage, TagPage.TagPag
 
     public object RoutePartial(TagPage.TagPage content, UrlResolverContext urlResolverContext)
     {
-        var continentPart = urlResolverContext.GetNextRemainingSegment(urlResolverContext.RemainingPath);
-        if (!string.IsNullOrEmpty(continentPart.Next))
+        var continentPart = urlResolverContext.GetNextSegment(urlResolverContext.RemainingSegments);
+        if (!continentPart.Next.IsEmpty)
         {
-            var continent = continentPart.Next;
+            var continent = continentPart.Next.ToString();
             //Check continent exists for this category
             var mcount = SearchClient.Instance.Search<LocationItemPage.LocationItemPage>()
                 .Filter(dp => dp.TagString().Match(content.Name)).Filter(dp => dp.Continent.MatchCaseInsensitive(continent))
@@ -34,7 +34,7 @@ public class TagsPartialRouting : IPartialRouter<TagPage.TagPage, TagPage.TagPag
             }
 
             urlResolverContext.RouteValues.Add("Continent", continent);
-            urlResolverContext.RemainingPath = continentPart.Remaining;
+            urlResolverContext.RemainingSegments = continentPart.Remaining;
             return content;
         }
 

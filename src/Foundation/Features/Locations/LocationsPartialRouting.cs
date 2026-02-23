@@ -19,8 +19,8 @@ public class LocationsPartialRouting : IPartialRouter<LocationItemPage.LocationI
 
     public object RoutePartial(LocationItemPage.LocationItemPage content, UrlResolverContext urlResolverContext)
     {
-        var elements = urlResolverContext.RemainingPath.Split('/');
-        urlResolverContext.RemainingPath = string.Empty;
+        var elements = urlResolverContext.RemainingSegments.ToString().Split('/');
+        urlResolverContext.RemainingSegments = default;
 
         TagPage.TagPage cp = null;
         var catpages = SearchClient.Instance.Search<TagPage.TagPage>().Take(100).GetContentResultAsync().GetAwaiter().GetResult().ToList();
