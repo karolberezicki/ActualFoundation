@@ -124,13 +124,15 @@ public class BulkUpdateController : Controller
         {
             contents = contents.Where(o => o.Name.IndexOf(keyword, StringComparison.CurrentCultureIgnoreCase) >= 0);
         }
-        var models = contents.Select(o => _contentConverterProvider.Resolve(o).Convert(o, new ConverterContext
-        (
+
+        var models = contents.Select(o => _contentConverterProvider.Resolve(o).Convert(o, new(
+            ContentReference.EmptyReference,
+            CultureInfo.GetCultureInfo(language),
             _contentApiOptions,
+            ContextMode.Default,
             "",
             "",
-            false,
-            CultureInfo.GetCultureInfo(language)
+            false
         )));
 
         return new ContentResult

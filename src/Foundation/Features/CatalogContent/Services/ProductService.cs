@@ -189,7 +189,7 @@ public class ProductService : IProductService
             DiscountedPrice = discountedPrice,
             ImageUrl = image,
             Url = entry.GetUrl(),
-            IsAvailable = originalPrice.UnitPrice != null && originalPrice.UnitPrice.Amount > 0,
+            IsAvailable = originalPrice.UnitPrice.Amount > 0,
             Stores = new StoreViewModel
             {
                 Stores = _storeService.GetEntryStoresViewModels(entry.Code),
