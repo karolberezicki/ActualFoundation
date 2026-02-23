@@ -186,7 +186,7 @@ public class ContentInstaller : IBlockingFirstRequestInitializer
                 success = true;
             }
         }
-        catch (Exception exception)
+        catch (Exception)
         {
             success = false;
         }
