@@ -8,7 +8,6 @@ using Foundation.Infrastructure.Commerce.Customer.Services;
 using Mediachase.Commerce.Customers;
 using Mediachase.Commerce.Orders;
 using Mediachase.Commerce.Orders.Exceptions;
-using Mediachase.Commerce.Orders.Managers;
 using Mediachase.Commerce.Security;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using System.Globalization;
@@ -22,7 +21,6 @@ public class CheckoutService
     private readonly IOrderGroupFactory _orderGroupFactory;
     private readonly IPaymentProcessor _paymentProcessor;
     private readonly IOrderRepository _orderRepository;
-    private readonly IContentRepository _contentRepository;
     private readonly CustomerContext _customerContext;
     private readonly LocalizationService _localizationService;
     private readonly IMailService _mailService;
@@ -53,7 +51,6 @@ public class CheckoutService
         _orderGroupCalculator = orderGroupCalculator;
         _paymentProcessor = paymentProcessor;
         _orderRepository = orderRepository;
-        _contentRepository = contentRepository;
         _customerContext = CustomerContext.Current;
         _localizationService = localizationService;
         _mailService = mailService;
@@ -306,7 +303,6 @@ public class CheckoutService
         //create first order
         orderReference = _orderRepository.SaveAsPurchaseOrder(paymentPlan);
         var purchaseOrder = _orderRepository.Load(orderReference);
-        OrderGroupWorkflowManager.RunWorkflow((OrderGroup)purchaseOrder, OrderGroupWorkflowManager.CartCheckOutWorkflowName);
         var noteDetailPattern = "New purchase order placed by {0} in {1} from payment plan {2}";
         var noteDetail = string.Format(noteDetailPattern, PrincipalInfo.CurrentPrincipal.Identity.Name, "VNext site", (paymentPlan as PaymentPlan).Id);
         AddNoteToPurchaseOrder(purchaseOrder as IPurchaseOrder, noteDetail, OrderNoteTypes.System, PrincipalInfo.CurrentPrincipal.GetContactId());

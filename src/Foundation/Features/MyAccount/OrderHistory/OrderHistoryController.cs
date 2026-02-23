@@ -7,7 +7,6 @@ using Foundation.Infrastructure.Cms;
 using Foundation.Infrastructure.Cms.Settings;
 using Foundation.Infrastructure.Commerce.Customer.Services;
 using Mediachase.Commerce.Orders;
-using Mediachase.Commerce.Orders.Managers;
 using Mediachase.Commerce.Security;
 
 namespace Foundation.Features.MyAccount.OrderHistory;
@@ -17,11 +16,9 @@ public class OrderHistoryController : OrderConfirmationControllerBase<OrderHisto
 {
     private readonly IAddressBookService _addressBookService;
     private readonly IOrderRepository _orderRepository;
-    private readonly IContentLoader _contentLoader;
     private readonly ICartService _cartService;
     private readonly IOrderGroupFactory _orderGroupFactory;
     private readonly PaymentMethodViewModelFactory _paymentMethodViewModelFactory;
-    private readonly ICookieService _cookieService;
     private readonly ISettingsService _settingsService;
 
     private const string _KEYWORD = "OrderHistoryPage:Keyword";
@@ -47,11 +44,9 @@ public class OrderHistoryController : OrderConfirmationControllerBase<OrderHisto
     {
         _addressBookService = addressBookService;
         _orderRepository = orderRepository;
-        _contentLoader = contentLoader;
         _cartService = cartService;
         _orderGroupFactory = orderGroupFactory;
         _paymentMethodViewModelFactory = paymentMethodViewModelFactory;
-        _cookieService = cookieService;
         _settingsService = settingsService;
     }
 
@@ -146,7 +141,6 @@ public class OrderHistoryController : OrderConfirmationControllerBase<OrderHisto
         //create first order
         orderReference = _orderRepository.SaveAsPurchaseOrder(paymentPlan);
         var newPurchaseOrder = _orderRepository.Load<IPurchaseOrder>(orderReference.OrderGroupId);
-        OrderGroupWorkflowManager.RunWorkflow((OrderGroup)newPurchaseOrder, OrderGroupWorkflowManager.CartCheckOutWorkflowName);
         var noteDetailPattern = "New purchase order placed by {0} in {1} from payment plan {2}";
         var noteDetail = string.Format(noteDetailPattern, principal.Identity.Name, "VNext site", (paymentPlan as PaymentPlan).Id);
         AddNoteToOrder(newPurchaseOrder, noteDetail, OrderNoteTypes.System, principal.GetContactId());
