@@ -1,8 +1,7 @@
-﻿namespace Foundation.Features.MyOrganization.SubOrganization
+﻿namespace Foundation.Features.MyOrganization.SubOrganization;
+
+public class SubOrganizationPageViewModel : ContentViewModel<SubOrganizationPage>
 {
-    public class SubOrganizationPageViewModel : ContentViewModel<SubOrganizationPage>
-    {
-        public SubOrganizationModel SubOrganizationModel { get; set; }
-        public bool IsAdmin { get; set; }
-    }
+    public SubOrganizationModel SubOrganizationModel { get; set; }
+    public bool IsAdmin { get; set; }
 }

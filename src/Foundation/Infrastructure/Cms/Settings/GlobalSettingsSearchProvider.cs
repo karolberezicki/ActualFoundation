@@ -2,108 +2,107 @@
 using EPiServer.Shell;
 using EPiServer.Shell.Search;
 
-namespace Foundation.Infrastructure.Cms.Settings
+namespace Foundation.Infrastructure.Cms.Settings;
+
+[SearchProvider]
+public class GlobalSettingsSearchProvider : ContentSearchProviderBase<SettingsBase, ContentType>
 {
-    [SearchProvider]
-    public class GlobalSettingsSearchProvider : ContentSearchProviderBase<SettingsBase, ContentType>
+    internal const string SearchArea = "Settings/globalsettings";
+    private readonly IContentLoader _contentLoader;
+    private readonly LocalizationService _localizationService;
+    private readonly ISettingsService _settingsService;
+
+    public GlobalSettingsSearchProvider(
+        LocalizationService localizationService,
+        ISiteDefinitionResolver siteDefinitionResolver,
+        IContentTypeRepository<ContentType> contentTypeRepository,
+        EditUrlResolver editUrlResolver,
+        ServiceAccessor<SiteDefinition> currentSiteDefinition,
+        IContentLanguageAccessor languageResolver,
+        UrlResolver urlResolver,
+        TemplateResolver templateResolver,
+        UIDescriptorRegistry uiDescriptorRegistry,
+        IContentLoader contentLoader,
+        ISettingsService settingsService)
+        : base(
+            localizationService: localizationService,
+            siteDefinitionResolver: siteDefinitionResolver,
+            contentTypeRepository: contentTypeRepository,
+            editUrlResolver: editUrlResolver,
+            currentSiteDefinition: currentSiteDefinition,
+            languageResolver: languageResolver,
+            urlResolver: urlResolver,
+            templateResolver: templateResolver,
+            uiDescriptorRegistry: uiDescriptorRegistry)
     {
-        internal const string SearchArea = "Settings/globalsettings";
-        private readonly IContentLoader _contentLoader;
-        private readonly LocalizationService _localizationService;
-        private readonly ISettingsService _settingsService;
+        _contentLoader = contentLoader;
+        _settingsService = settingsService;
+        _localizationService = localizationService;
+    }
 
-        public GlobalSettingsSearchProvider(
-            LocalizationService localizationService,
-            ISiteDefinitionResolver siteDefinitionResolver,
-            IContentTypeRepository<ContentType> contentTypeRepository,
-            EditUrlResolver editUrlResolver,
-            ServiceAccessor<SiteDefinition> currentSiteDefinition,
-            IContentLanguageAccessor languageResolver,
-            UrlResolver urlResolver,
-            TemplateResolver templateResolver,
-            UIDescriptorRegistry uiDescriptorRegistry,
-            IContentLoader contentLoader,
-            ISettingsService settingsService)
-            : base(
-                localizationService: localizationService,
-                siteDefinitionResolver: siteDefinitionResolver,
-                contentTypeRepository: contentTypeRepository,
-                editUrlResolver: editUrlResolver,
-                currentSiteDefinition: currentSiteDefinition,
-                languageResolver: languageResolver,
-                urlResolver: urlResolver,
-                templateResolver: templateResolver,
-                uiDescriptorRegistry: uiDescriptorRegistry)
+    public override string Area => SearchArea;
+
+    public override string Category => _localizationService.GetString("/episerver/cms/components/globalsettings/title");
+
+    protected override string IconCssClass => "epi-iconSettings";
+
+    public override IEnumerable<SearchResult> Search(Query query)
+    {
+        if (string.IsNullOrWhiteSpace(value: query?.SearchQuery) || query.SearchQuery.Trim().Length < 2)
         {
-            _contentLoader = contentLoader;
-            _settingsService = settingsService;
-            _localizationService = localizationService;
+            return Enumerable.Empty<SearchResult>();
         }
 
-        public override string Area => SearchArea;
+        var searchResultList = new List<SearchResult>();
+        var str = query.SearchQuery.Trim();
 
-        public override string Category => _localizationService.GetString("/episerver/cms/components/globalsettings/title");
+        var globalSettings =
+            _contentLoader.GetChildren<SettingsBase>(contentLink: _settingsService.GlobalSettingsRoot);
 
-        protected override string IconCssClass => "epi-iconSettings";
-
-        public override IEnumerable<SearchResult> Search(Query query)
+        foreach (var setting in globalSettings)
         {
-            if (string.IsNullOrWhiteSpace(value: query?.SearchQuery) || query.SearchQuery.Trim().Length < 2)
+            if (setting.Name.IndexOf(value: str, comparisonType: StringComparison.OrdinalIgnoreCase) < 0)
             {
-                return Enumerable.Empty<SearchResult>();
+                continue;
             }
 
-            var searchResultList = new List<SearchResult>();
-            var str = query.SearchQuery.Trim();
+            searchResultList.Add(CreateSearchResult(contentData: setting));
 
-            var globalSettings =
-                _contentLoader.GetChildren<SettingsBase>(contentLink: _settingsService.GlobalSettingsRoot);
-
-            foreach (var setting in globalSettings)
+            if (searchResultList.Count == query.MaxResults)
             {
-                if (setting.Name.IndexOf(value: str, comparisonType: StringComparison.OrdinalIgnoreCase) < 0)
-                {
-                    continue;
-                }
-
-                searchResultList.Add(CreateSearchResult(contentData: setting));
-
-                if (searchResultList.Count == query.MaxResults)
-                {
-                    break;
-                }
+                break;
             }
-
-            return searchResultList;
         }
 
-        protected override string CreatePreviewText(IContentData content)
+        return searchResultList;
+    }
+
+    protected override string CreatePreviewText(IContentData content)
+    {
+        return content == null
+            ? string.Empty
+            : $"{((SettingsBase)content).Name} {_localizationService.GetString("/contentrepositories/globalsettings/customselecttitle").ToLower()}";
+    }
+
+    protected override string GetEditUrl(SettingsBase contentData, out bool onCurrentHost)
+    {
+        onCurrentHost = true;
+
+        if (contentData == null)
         {
-            return content == null
-                       ? string.Empty
-                       : $"{((SettingsBase)content).Name} {_localizationService.GetString("/contentrepositories/globalsettings/customselecttitle").ToLower()}";
+            return string.Empty;
         }
 
-        protected override string GetEditUrl(SettingsBase contentData, out bool onCurrentHost)
+        var contentLink = contentData.ContentLink;
+        var language = string.Empty;
+        ILocalizable localizable = contentData;
+
+        if (localizable != null)
         {
-            onCurrentHost = true;
-
-            if (contentData == null)
-            {
-                return string.Empty;
-            }
-
-            var contentLink = contentData.ContentLink;
-            var language = string.Empty;
-            ILocalizable localizable = contentData;
-
-            if (localizable != null)
-            {
-                language = localizable.Language.Name;
-            }
-
-            return
-                $"/episerver/Foundation.Infrastructure.Cms.Settings/settings#context=epi.cms.contentdata:///{contentLink.ID}&viewsetting=viewlanguage:///{language}";
+            language = localizable.Language.Name;
         }
+
+        return
+            $"/episerver/Foundation.Infrastructure.Cms.Settings/settings#context=epi.cms.contentdata:///{contentLink.ID}&viewsetting=viewlanguage:///{language}";
     }
 }

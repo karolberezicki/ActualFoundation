@@ -1,10 +1,9 @@
-﻿namespace Foundation.Infrastructure.Find.Facets
+﻿namespace Foundation.Infrastructure.Find.Facets;
+
+public class FacetOption
 {
-    public class FacetOption
-    {
-        public string Name { get; set; }
-        public string Key { get; set; }
-        public bool Selected { get; set; }
-        public int Count { get; set; }
-    }
+    public string Name { get; set; }
+    public string Key { get; set; }
+    public bool Selected { get; set; }
+    public int Count { get; set; }
 }

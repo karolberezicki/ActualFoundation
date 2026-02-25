@@ -1,11 +1,10 @@
 using Foundation.Features.Home;
 
-namespace Foundation.Features.Shared
+namespace Foundation.Features.Shared;
+
+public interface IContentViewModel<out TContent> where TContent : IContent
 {
-    public interface IContentViewModel<out TContent> where TContent : IContent
-    {
-        TContent CurrentContent { get; }
-        HomePage StartPage { get; }
-        HtmlString SchemaMarkup { get; }
-    }
+    TContent CurrentContent { get; }
+    HomePage StartPage { get; }
+    HtmlString SchemaMarkup { get; }
 }

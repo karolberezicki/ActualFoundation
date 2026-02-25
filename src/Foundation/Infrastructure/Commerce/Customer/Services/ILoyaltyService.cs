@@ -1,8 +1,7 @@
-﻿namespace Foundation.Infrastructure.Commerce.Customer.Services
+﻿namespace Foundation.Infrastructure.Commerce.Customer.Services;
+
+public interface ILoyaltyService
 {
-    public interface ILoyaltyService
-    {
-        void AddNumberOfOrders();
-        void AddNumberOfReviews();
-    }
+    void AddNumberOfOrders();
+    void AddNumberOfReviews();
 }

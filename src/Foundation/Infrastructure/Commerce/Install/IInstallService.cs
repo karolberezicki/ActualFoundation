@@ -1,10 +1,9 @@
-﻿namespace Foundation.Infrastructure.Commerce.Install
+﻿namespace Foundation.Infrastructure.Commerce.Install;
+
+public interface IInstallService
 {
-    public interface IInstallService
-    {
-        FoundationConfiguration FoundationConfiguration { get; }
-        InstallProgressMessenger ProgressMessenger { get; set; }
-        bool ShouldInstall();
-        void RunInstallSteps();
-    }
+    FoundationConfiguration FoundationConfiguration { get; }
+    InstallProgressMessenger ProgressMessenger { get; set; }
+    bool ShouldInstall();
+    void RunInstallSteps();
 }

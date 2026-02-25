@@ -1,16 +1,15 @@
 ﻿using EPiServer.Cms.UI.AspNetIdentity;
 using Microsoft.AspNetCore.Identity;
 
-namespace Foundation.Infrastructure.Cms.Users
+namespace Foundation.Infrastructure.Cms.Users;
+
+public interface IUserService
 {
-    public interface IUserService
-    {
-        ApplicationUserManager<SiteUser> UserManager { get; }
-        ApplicationSignInManager<SiteUser> SignInManager { get; }
-        Guid CurrentContactId { get; }
-        Task<SiteUser> GetSiteUserAsync(string email);
-        Task<ExternalLoginInfo> GetExternalLoginInfoAsync();
-        Task<IdentityResult> CreateUserAsync(SiteUser user);
-        Task SignOut();
-    }
+    ApplicationUserManager<SiteUser> UserManager { get; }
+    ApplicationSignInManager<SiteUser> SignInManager { get; }
+    Guid CurrentContactId { get; }
+    Task<SiteUser> GetSiteUserAsync(string email);
+    Task<ExternalLoginInfo> GetExternalLoginInfoAsync();
+    Task<IdentityResult> CreateUserAsync(SiteUser user);
+    Task SignOut();
 }

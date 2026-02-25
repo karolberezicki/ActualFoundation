@@ -1,31 +1,31 @@
 ﻿using Foundation.Features.Search;
 using Foundation.Infrastructure.Cms.Settings;
 
-namespace Foundation.Features.NewProducts
+namespace Foundation.Features.NewProducts;
+
+public class NewProductsPageController : PageController<NewProductsPage>
 {
-    public class NewProductsPageController : PageController<NewProductsPage>
+    private readonly ISearchService _searchService;
+    private readonly ISettingsService _settingsService;
+
+    public NewProductsPageController(ISearchService searchService,
+        ISettingsService settingsService)
     {
-        private readonly ISearchService _searchService;
-        private readonly ISettingsService _settingsService;
+        _searchService = searchService;
+        _settingsService = settingsService;
+    }
 
-        public NewProductsPageController(ISearchService searchService,
-           ISettingsService settingsService)
+    public async Task<ActionResult> Index(NewProductsPage currentPage, int page = 1)
+    {
+        var searchsettings = _settingsService.GetSiteSettings<SearchSettings>();
+        var result = await _searchService.SearchNewProductsAsync(currentPage, searchsettings?.SearchCatalog ?? 0, page);
+        var model = new NewProductsPageViewModel(currentPage)
         {
-            _searchService = searchService;
-            _settingsService = settingsService;
-        }
+            ProductViewModels = result.Products,
+            PageNumber = page,
+            Pages = result.Pages
+        };
 
-        public ActionResult Index(NewProductsPage currentPage, int page = 1)
-        {
-            var searchsettings = _settingsService.GetSiteSettings<SearchSettings>();
-            var model = new NewProductsPageViewModel(currentPage)
-            {
-                ProductViewModels = _searchService.SearchNewProducts(currentPage, out var pages, searchsettings?.SearchCatalog ?? 0, page),
-                PageNumber = page,
-                Pages = pages
-            };
-
-            return View(model);
-        }
+        return View(model);
     }
 }

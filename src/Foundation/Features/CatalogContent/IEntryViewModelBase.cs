@@ -1,11 +1,9 @@
 ﻿using EPiServer.Personalization.Commerce.Tracking;
 
-namespace Foundation.Features.CatalogContent
+namespace Foundation.Features.CatalogContent;
+
+public interface IEntryViewModelBase
 {
-    public interface IEntryViewModelBase
-    {
-        //ReviewsViewModel Reviews { get; set; }
-        IEnumerable<Recommendation> AlternativeProducts { get; set; }
-        IEnumerable<Recommendation> CrossSellProducts { get; set; }
-    }
+    IEnumerable<Recommendation> AlternativeProducts { get; set; }
+    IEnumerable<Recommendation> CrossSellProducts { get; set; }
 }

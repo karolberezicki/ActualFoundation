@@ -1,9 +1,8 @@
 ﻿using Foundation.Infrastructure.Find.Facets.Config;
 
-namespace Foundation.Infrastructure.Find.Facets
+namespace Foundation.Infrastructure.Find.Facets;
+
+public interface IFacetConfiguration
 {
-    public interface IFacetConfiguration
-    {
-        IList<FacetFilterConfigurationItem> SearchFiltersConfiguration { get; set; }
-    }
+    IList<FacetFilterConfigurationItem> SearchFiltersConfiguration { get; set; }
 }

@@ -1,7 +1,6 @@
-namespace Foundation.Features.MyAccount.OrderHistory
+namespace Foundation.Features.MyAccount.OrderHistory;
+
+public class OrderHistoryItemViewModel
 {
-    public class OrderHistoryItemViewModel
-    {
-        public ILineItem LineItem { get; set; }
-    }
+    public ILineItem LineItem { get; set; }
 }

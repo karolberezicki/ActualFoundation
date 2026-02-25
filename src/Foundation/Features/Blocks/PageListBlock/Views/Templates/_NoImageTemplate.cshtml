@@ -1,5 +1,6 @@
 ﻿@model PageListBlockViewModel
-@using EPiServer.Core.Html
+@using EPiServer.Find.Helpers.Text
+@using Foundation.Infrastructure.Cms.Extensions
 @using Foundation.Features.Blocks.PageListBlock
 @using Foundation.Features.Shared.SelectionFactories
 
@@ -14,7 +15,7 @@
 
             <a class="col-@imageCol preview--image-top" href="@pageModel.Page.ContentLink.GetPublicUrl()">
                 <h4>
-                    @(@Html.Raw(TextIndexer.StripHtml(pageModel != null ? foundationPage.MetaTitle : pageModel.Page.Name, 55)) + "...")
+                    @(@Html.Raw((pageModel != null ? foundationPage.MetaTitle : pageModel.Page.Name)?.StripHtml().Truncate(55)) + "...")
                 </h4>
                 @if (Model.ShowPublishDate)
                 {
@@ -23,7 +24,7 @@
                 @if (pageModel != null && Model.ShowIntroduction)
                 {
                     <br />
-                    <p class="light-text">@Html.Raw(TextIndexer.StripHtml(foundationPage.TeaserText, 200))</p>
+                    <p class="light-text">@Html.Raw(foundationPage.TeaserText?.StripHtml().Truncate(200))</p>
                 }
             </a>
         }

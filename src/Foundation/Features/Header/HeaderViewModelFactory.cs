@@ -15,328 +15,327 @@ using Foundation.Infrastructure.Commerce.Customer;
 using Foundation.Infrastructure.Commerce.Customer.Services;
 using Mediachase.Commerce.Customers;
 
-namespace Foundation.Features.Header
+namespace Foundation.Features.Header;
+
+public class HeaderViewModelFactory : IHeaderViewModelFactory
 {
-    public class HeaderViewModelFactory : IHeaderViewModelFactory
+    private readonly LocalizationService _localizationService;
+    private readonly CartViewModelFactory _cartViewModelFactory;
+    private readonly IUrlResolver _urlResolver;
+    private readonly IBookmarksService _bookmarksService;
+    private readonly ICartService _cartService;
+    private readonly IContentCacheKeyCreator _contentCacheKeyCreator;
+    private readonly IContentLoader _contentLoader;
+    private readonly IDatabaseMode _databaseMode;
+    private readonly ICustomerService _customerService;
+    private readonly CustomerContext _customerContext;
+    private readonly ISettingsService _settingsService;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IContextModeResolver _contextModeResolver;
+
+    public HeaderViewModelFactory(LocalizationService localizationService,
+        ICustomerService customerService,
+        CartViewModelFactory cartViewModelFactory,
+        IUrlResolver urlResolver,
+        IBookmarksService bookmarksService,
+        ICartService cartService,
+        CustomerContext customerContext,
+        IContentCacheKeyCreator contentCacheKeyCreator,
+        IContentLoader contentLoader,
+        IDatabaseMode databaseMode,
+        ISettingsService settingsService,
+        IHttpContextAccessor httpContextAccessor,
+        IContextModeResolver contextModeResolver)
     {
-        private readonly LocalizationService _localizationService;
-        private readonly CartViewModelFactory _cartViewModelFactory;
-        private readonly IUrlResolver _urlResolver;
-        private readonly IBookmarksService _bookmarksService;
-        private readonly ICartService _cartService;
-        private readonly IContentCacheKeyCreator _contentCacheKeyCreator;
-        private readonly IContentLoader _contentLoader;
-        private readonly IDatabaseMode _databaseMode;
-        private readonly ICustomerService _customerService;
-        private readonly CustomerContext _customerContext;
-        private readonly ISettingsService _settingsService;
-        private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly IContextModeResolver _contextModeResolver;
+        _localizationService = localizationService;
+        _customerService = customerService;
+        _cartViewModelFactory = cartViewModelFactory;
+        _urlResolver = urlResolver;
+        _bookmarksService = bookmarksService;
+        _cartService = cartService;
+        _contentCacheKeyCreator = contentCacheKeyCreator;
+        _contentLoader = contentLoader;
+        _databaseMode = databaseMode;
+        _customerContext = customerContext;
+        _settingsService = settingsService;
+        _httpContextAccessor = httpContextAccessor;
+        _contextModeResolver = contextModeResolver;
+    }
 
-        public HeaderViewModelFactory(LocalizationService localizationService,
-            ICustomerService customerService,
-            CartViewModelFactory cartViewModelFactory,
-            IUrlResolver urlResolver,
-            IBookmarksService bookmarksService,
-            ICartService cartService,
-            CustomerContext customerContext,
-            IContentCacheKeyCreator contentCacheKeyCreator,
-            IContentLoader contentLoader,
-            IDatabaseMode databaseMode,
-            ISettingsService settingsService,
-            IHttpContextAccessor httpContextAccessor,
-            IContextModeResolver contextModeResolver)
+    public virtual HeaderViewModel CreateHeaderViewModel(IContent content, HomePage home)
+    {
+        var layoutSettings = _settingsService.GetSiteSettings<LayoutSettings>();
+        var contact = _customerService.GetCurrentContact();
+        var isBookmarked = IsBookmarked(content);
+        var viewModel = CreateViewModel(content, home, contact, isBookmarked);
+        AddCommerceComponents(contact, viewModel);
+        AddAnonymousComponents(home, viewModel);
+        AddMyAccountMenu(home, viewModel);
+        viewModel.LargeHeaderMenu = layoutSettings?.LargeHeaderMenu ?? true;
+        viewModel.ShowCommerceControls = layoutSettings?.ShowCommerceHeaderComponents ?? true;
+        viewModel.DemoUsers = GetDemoUsers(layoutSettings?.ShowCommerceHeaderComponents ?? true);
+        viewModel.LayoutSettings = layoutSettings;
+        viewModel.SearchSettings = _settingsService.GetSiteSettings<SearchSettings>();
+        viewModel.ReferencePageSettings = _settingsService.GetSiteSettings<ReferencePageSettings>();
+        viewModel.LabelSettings = _settingsService.GetSiteSettings<LabelSettings>();
+
+        return viewModel;
+    }
+
+    public virtual HeaderLogoViewModel CreateHeaderLogoViewModel()
+    {
+        var layoutSettings = _settingsService.GetSiteSettings<LayoutSettings>();
+        var viewModel = new HeaderLogoViewModel()
         {
-            _localizationService = localizationService;
-            _customerService = customerService;
-            _cartViewModelFactory = cartViewModelFactory;
-            _urlResolver = urlResolver;
-            _bookmarksService = bookmarksService;
-            _cartService = cartService;
-            _contentCacheKeyCreator = contentCacheKeyCreator;
-            _contentLoader = contentLoader;
-            _databaseMode = databaseMode;
-            _customerContext = customerContext;
-            _settingsService = settingsService;
-            _httpContextAccessor = httpContextAccessor;
-            _contextModeResolver = contextModeResolver;
+            LargeHeaderMenu = layoutSettings.LargeHeaderMenu,
+            HeaderMenuStyle = layoutSettings.HeaderMenuStyle,
+            SiteLogo = layoutSettings.SiteLogo
+        };
+
+        return viewModel;
+    }
+
+    public virtual void AddMyAccountMenu(HomePage homePage, HeaderViewModel viewModel)
+    {
+        if (HttpContextHelper.Current != null && !_httpContextAccessor.HttpContext.User.Identity.IsAuthenticated)
+        {
+            viewModel.UserLinks = new LinkItemCollection();
+            return;
         }
 
-        public virtual HeaderViewModel CreateHeaderViewModel(IContent content, HomePage home)
-        {
-            var layoutSettings = _settingsService.GetSiteSettings<LayoutSettings>();
-            var contact = _customerService.GetCurrentContact();
-            var isBookmarked = IsBookmarked(content);
-            var viewModel = CreateViewModel(content, home, contact, isBookmarked);
-            AddCommerceComponents(contact, viewModel);
-            AddAnonymousComponents(home, viewModel);
-            AddMyAccountMenu(home, viewModel);
-            viewModel.LargeHeaderMenu = layoutSettings?.LargeHeaderMenu ?? true;
-            viewModel.ShowCommerceControls = layoutSettings?.ShowCommerceHeaderComponents ?? true;
-            viewModel.DemoUsers = GetDemoUsers(layoutSettings?.ShowCommerceHeaderComponents ?? true);
-            viewModel.LayoutSettings = layoutSettings;
-            viewModel.SearchSettings = _settingsService.GetSiteSettings<SearchSettings>();
-            viewModel.ReferencePageSettings = _settingsService.GetSiteSettings<ReferencePageSettings>();
-            viewModel.LabelSettings = _settingsService.GetSiteSettings<LabelSettings>();
+        var menuItems = new LinkItemCollection();
+        var filter = new FilterContentForVisitor();
+        var contact = _customerService.GetCurrentContact();
+        var referenceSettings = _settingsService.GetSiteSettings<ReferencePageSettings>();
+        var layoutSettings = _settingsService.GetSiteSettings<LayoutSettings>();
 
-            return viewModel;
-        }
-
-        public virtual HeaderLogoViewModel CreateHeaderLogoViewModel()
+        if (contact != null && contact.FoundationOrganization != null)
         {
-            var layoutSettings = _settingsService.GetSiteSettings<LayoutSettings>();
-            var viewModel = new HeaderLogoViewModel()
+            var orgLink = new LinkItem
             {
-                LargeHeaderMenu = layoutSettings.LargeHeaderMenu,
-                HeaderMenuStyle = layoutSettings.HeaderMenuStyle,
-                SiteLogo = layoutSettings.SiteLogo
+                Href = _urlResolver.GetUrl(referenceSettings?.OrganizationMainPage ?? ContentReference.StartPage),
+                Text = _localizationService.GetString("My Organization", "My Organization"),
+                Title = _localizationService.GetString("My Organization", "My Organization")
             };
 
-            return viewModel;
+            menuItems.Add(orgLink);
         }
 
-        public virtual void AddMyAccountMenu(HomePage homePage, HeaderViewModel viewModel)
+        foreach (var linkItem in layoutSettings?.MyAccountMenu ?? new LinkItemCollection())
         {
-            if (HttpContextHelper.Current != null && !_httpContextAccessor.HttpContext.User.Identity.IsAuthenticated)
+            if (!UrlResolver.Current.TryToPermanent(linkItem.Href, out var linkUrl))
             {
-                viewModel.UserLinks = new LinkItemCollection();
-                return;
+                continue;
             }
 
-            var menuItems = new LinkItemCollection();
-            var filter = new FilterContentForVisitor();
-            var contact = _customerService.GetCurrentContact();
-            var referenceSettings = _settingsService.GetSiteSettings<ReferencePageSettings>();
-            var layoutSettings = _settingsService.GetSiteSettings<LayoutSettings>();
-
-            if (contact != null && contact.FoundationOrganization != null)
+            if (linkUrl.IsNullOrEmpty())
             {
-                var orgLink = new LinkItem
-                {
-                    Href = _urlResolver.GetUrl(referenceSettings?.OrganizationMainPage ?? ContentReference.StartPage),
-                    Text = _localizationService.GetString("My Organization", "My Organization"),
-                    Title = _localizationService.GetString("My Organization", "My Organization")
-                };
-
-                menuItems.Add(orgLink);
+                continue;
             }
 
-            foreach (var linkItem in layoutSettings?.MyAccountMenu ?? new LinkItemCollection())
+            var urlBuilder = new UrlBuilder(linkUrl);
+            var content = _urlResolver.Route(urlBuilder);
+            if (content == null || filter.ShouldFilter(content))
             {
-                if (!UrlResolver.Current.TryToPermanent(linkItem.Href, out var linkUrl))
-                {
-                    continue;
-                }
-
-                if (linkUrl.IsNullOrEmpty())
-                {
-                    continue;
-                }
-
-                var urlBuilder = new UrlBuilder(linkUrl);
-                var content = _urlResolver.Route(urlBuilder);
-                if (content == null || filter.ShouldFilter(content))
-                {
-                    continue;
-                }
-
-                linkItem.Title = linkItem.Text;
-                menuItems.Add(linkItem);
+                continue;
             }
 
-            var signoutText = _localizationService.GetString("/Header/Account/SignOut", "Sign Out");
-            var link = new LinkItem
-            {
-                Href = "/publicapi/signout",
-                Text = signoutText,
-                Title = signoutText
-            };
-            link.Attributes.Add("css", "fa-sign-out");
-            menuItems.Add(link);
-
-            viewModel.UserLinks.AddRange(menuItems);
+            linkItem.Title = linkItem.Text;
+            menuItems.Add(linkItem);
         }
 
-        protected virtual bool IsBookmarked(IContent currentContent)
+        var signoutText = _localizationService.GetString("/Header/Account/SignOut", "Sign Out");
+        var link = new LinkItem
         {
-            var isBookmarked = false;
-            var bookmarks = _bookmarksService.Get();
+            Href = "/publicapi/signout",
+            Text = signoutText,
+            Title = signoutText
+        };
+        link.Attributes.Add("css", "fa-sign-out");
+        menuItems.Add(link);
 
-            if (bookmarks != null && bookmarks.Any() && currentContent != null)
-            {
-                isBookmarked = bookmarks.FirstOrDefault(x => x.ContentGuid == currentContent.ContentGuid) != null;
-            }
+        viewModel.UserLinks.AddRange(menuItems);
+    }
 
-            return isBookmarked;
+    protected virtual bool IsBookmarked(IContent currentContent)
+    {
+        var isBookmarked = false;
+        var bookmarks = _bookmarksService.Get();
+
+        if (bookmarks != null && bookmarks.Any() && currentContent != null)
+        {
+            isBookmarked = bookmarks.FirstOrDefault(x => x.ContentGuid == currentContent.ContentGuid) != null;
         }
 
-        protected virtual HeaderViewModel CreateViewModel(IContent currentContent, HomePage homePage, FoundationContact contact, bool isBookmarked)
+        return isBookmarked;
+    }
+
+    protected virtual HeaderViewModel CreateViewModel(IContent currentContent, HomePage homePage, FoundationContact contact, bool isBookmarked)
+    {
+        var menuItems = new List<MenuItemViewModel>();
+        var homeLanguage = homePage.Language.DisplayName;
+        var layoutSettings = _settingsService.GetSiteSettings<LayoutSettings>();
+        var referenceSettings = _settingsService.GetSiteSettings<ReferencePageSettings>();
+        var filter = new FilterContentForVisitor();
+        menuItems = layoutSettings?.MainMenu?.FilteredItems.Where(x =>
         {
-            var menuItems = new List<MenuItemViewModel>();
-            var homeLanguage = homePage.Language.DisplayName;
-            var layoutSettings = _settingsService.GetSiteSettings<LayoutSettings>();
-            var referenceSettings = _settingsService.GetSiteSettings<ReferencePageSettings>();
-            var filter = new FilterContentForVisitor();
-            menuItems = layoutSettings?.MainMenu?.FilteredItems.Where(x =>
+            var _menuItem = _contentLoader.Get<IContent>(x.ContentLink);
+            MenuItemBlock _menuItemBlock;
+            if (_menuItem is MenuItemBlock)
             {
-                var _menuItem = _contentLoader.Get<IContent>(x.ContentLink);
-                MenuItemBlock _menuItemBlock;
-                if (_menuItem is MenuItemBlock)
+                _menuItemBlock = _menuItem as MenuItemBlock;
+                if (_menuItemBlock.Link == null)
                 {
-                    _menuItemBlock = _menuItem as MenuItemBlock;
-                    if (_menuItemBlock.Link == null)
-                    {
-                        return true;
-                    }
-                    var linkedItem = UrlResolver.Current.Route(new UrlBuilder(_menuItemBlock.Link));
-                    if (linkedItem != null && filter.ShouldFilter(linkedItem))
-                    {
-                        return false;
-                    }
                     return true;
                 }
-                return true;
-            }).Select(x =>
-            {
-                var itemCached = CacheManager.Get(x.ContentLink.ID + homeLanguage + ":" + Constant.CacheKeys.MenuItems) as MenuItemViewModel;
-                if (itemCached != null && !_contextModeResolver.CurrentMode.EditOrPreview())
+                var linkedItem = UrlResolver.Current.Route(new UrlBuilder(_menuItemBlock.Link));
+                if (linkedItem != null && filter.ShouldFilter(linkedItem))
                 {
-                    return itemCached;
+                    return false;
+                }
+                return true;
+            }
+            return true;
+        }).Select(x =>
+        {
+            var itemCached = CacheManager.Get(x.ContentLink.ID + homeLanguage + ":" + Constant.CacheKeys.MenuItems) as MenuItemViewModel;
+            if (itemCached != null && !_contextModeResolver.CurrentMode.EditOrPreview())
+            {
+                return itemCached;
+            }
+            else
+            {
+                var content = _contentLoader.Get<IContent>(x.ContentLink);
+                MenuItemBlock _;
+                MenuItemViewModel menuItem;
+                if (content is MenuItemBlock)
+                {
+                    _ = content as MenuItemBlock;
+                    menuItem = new MenuItemViewModel
+                    {
+                        Name = _.Name,
+                        ButtonText = _.ButtonText,
+                        TeaserText = _.TeaserText,
+                        Uri = _.Link == null ? string.Empty : _urlResolver.GetUrl(new UrlBuilder(_.Link.ToString()), new UrlResolverArguments() { ContextMode = ContextMode.Default }),
+                        ImageUrl = !ContentReference.IsNullOrEmpty(_.MenuImage) ? _urlResolver.GetUrl(_.MenuImage) : "",
+                        ButtonLink = _.ButtonLink?.Host + _.ButtonLink?.PathAndQuery,
+                        ChildLinks = _.ChildItems?.ToList() ?? new List<GroupLinkCollection>()
+                    };
                 }
                 else
                 {
-                    var content = _contentLoader.Get<IContent>(x.ContentLink);
-                    MenuItemBlock _;
-                    MenuItemViewModel menuItem;
-                    if (content is MenuItemBlock)
+                    menuItem = new MenuItemViewModel
                     {
-                        _ = content as MenuItemBlock;
-                        menuItem = new MenuItemViewModel
-                        {
-                            Name = _.Name,
-                            ButtonText = _.ButtonText,
-                            TeaserText = _.TeaserText,
-                            Uri = _.Link == null ? string.Empty : _urlResolver.GetUrl(new UrlBuilder(_.Link.ToString()), new UrlResolverArguments() { ContextMode = ContextMode.Default }),
-                            ImageUrl = !ContentReference.IsNullOrEmpty(_.MenuImage) ? _urlResolver.GetUrl(_.MenuImage) : "",
-                            ButtonLink = _.ButtonLink?.Host + _.ButtonLink?.PathAndQuery,
-                            ChildLinks = _.ChildItems?.ToList() ?? new List<GroupLinkCollection>()
-                        };
-                    }
-                    else
-                    {
-                        menuItem = new MenuItemViewModel
-                        {
-                            Name = content.Name,
-                            Uri = _urlResolver.GetUrl(content.ContentLink),
-                            ChildLinks = new List<GroupLinkCollection>()
-                        };
-                    }
-
-                    if (!_contextModeResolver.CurrentMode.EditOrPreview())
-                    {
-                        var keyDependency = new List<string>
-                        {
-                            _contentCacheKeyCreator.CreateCommonCacheKey(homePage.ContentLink), // If The HomePage updates menu (remove MenuItems)
-                            _contentCacheKeyCreator.CreateCommonCacheKey(x.ContentLink)
-                        };
-
-                        var eviction = new CacheEvictionPolicy(TimeSpan.FromDays(1), CacheTimeoutType.Sliding, keyDependency);
-                        CacheManager.Insert(x.ContentLink.ID + homeLanguage + ":" + Constant.CacheKeys.MenuItems, menuItem, eviction);
-                    }
-
-                    return menuItem;
+                        Name = content.Name,
+                        Uri = _urlResolver.GetUrl(content.ContentLink),
+                        ChildLinks = new List<GroupLinkCollection>()
+                    };
                 }
-            }).ToList();
 
-            return new HeaderViewModel
-            {
-                HomePage = homePage,
-                CurrentContentLink = currentContent?.ContentLink,
-                CurrentContentGuid = currentContent?.ContentGuid ?? Guid.Empty,
-                UserLinks = new LinkItemCollection(),
-                Name = contact?.FirstName ?? "",
-                IsBookmarked = isBookmarked,
-                IsReadonlyMode = _databaseMode.DatabaseMode == DatabaseMode.ReadOnly,
-                MenuItems = menuItems ?? new List<MenuItemViewModel>(),
-                LoginViewModel = new LoginViewModel
+                if (!_contextModeResolver.CurrentMode.EditOrPreview())
                 {
-                    ResetPasswordPage = referenceSettings?.ResetPasswordPage ?? ContentReference.StartPage
-                },
-                RegisterAccountViewModel = new RegisterAccountViewModel
-                {
-                    Address = new AddressModel()
-                },
-            };
-        }
-
-        protected virtual void AddCommerceComponents(FoundationContact contact, HeaderViewModel viewModel)
-        {
-            if (_databaseMode.DatabaseMode == DatabaseMode.ReadOnly)
-            {
-                viewModel.MiniCart = new MiniCartViewModel();
-                viewModel.WishListMiniCart = new MiniWishlistViewModel();
-                viewModel.SharedMiniCart = new MiniCartViewModel();
-                return;
-            }
-
-            viewModel.MiniCart = _cartViewModelFactory.CreateMiniCartViewModel(
-                _cartService.LoadCart(_cartService.DefaultCartName, true)?.Cart);
-
-            viewModel.WishListMiniCart = _cartViewModelFactory.CreateMiniWishListViewModel(
-                _cartService.LoadCart(_cartService.DefaultWishListName, true)?.Cart);
-
-            var organizationId = contact?.FoundationOrganization?.OrganizationId.ToString();
-            if (!organizationId.IsNullOrEmpty())
-            {
-                viewModel.SharedMiniCart = _cartViewModelFactory.CreateMiniCartViewModel(
-                    _cartService.LoadCart(_cartService.DefaultSharedCartName, organizationId, true)?.Cart, true);
-
-                viewModel.ShowSharedCart = true;
-            }
-        }
-
-        protected virtual void AddAnonymousComponents(HomePage homePage, HeaderViewModel viewModel)
-        {
-            if (HttpContextHelper.Current != null && !_httpContextAccessor.HttpContext.User.Identity.IsAuthenticated)
-            {
-                var referenceSettings = _settingsService.GetSiteSettings<ReferencePageSettings>();
-                viewModel.LoginViewModel = new LoginViewModel
-                {
-                    ResetPasswordPage = referenceSettings?.ResetPasswordPage ?? ContentReference.StartPage
-                };
-
-                viewModel.RegisterAccountViewModel = new RegisterAccountViewModel
-                {
-                    Address = new AddressModel
+                    var keyDependency = new List<string>
                     {
-                        CountryRegion = new CountryRegionViewModel
-                        {
-                            SelectClass = "select-menu-small",
-                            TextboxClass = "textbox-small"
-                        }
-                    }
-                };
+                        _contentCacheKeyCreator.CreateCommonCacheKey(homePage.ContentLink), // If The HomePage updates menu (remove MenuItems)
+                        _contentCacheKeyCreator.CreateCommonCacheKey(x.ContentLink)
+                    };
 
-                viewModel.RegisterAccountViewModel.Address.Name = _localizationService.GetString("/Shared/Address/DefaultAddressName", "Default Address");
+                    var eviction = new CacheEvictionPolicy(TimeSpan.FromDays(1), CacheTimeoutType.Sliding, keyDependency);
+                    CacheManager.Insert(x.ContentLink.ID + homeLanguage + ":" + Constant.CacheKeys.MenuItems, menuItem, eviction);
+                }
+
+                return menuItem;
             }
+        }).ToList();
+
+        return new HeaderViewModel
+        {
+            HomePage = homePage,
+            CurrentContentLink = currentContent?.ContentLink,
+            CurrentContentGuid = currentContent?.ContentGuid ?? Guid.Empty,
+            UserLinks = new LinkItemCollection(),
+            Name = contact?.FirstName ?? "",
+            IsBookmarked = isBookmarked,
+            IsReadonlyMode = _databaseMode.DatabaseMode == DatabaseMode.ReadOnly,
+            MenuItems = menuItems ?? new List<MenuItemViewModel>(),
+            LoginViewModel = new LoginViewModel
+            {
+                ResetPasswordPage = referenceSettings?.ResetPasswordPage ?? ContentReference.StartPage
+            },
+            RegisterAccountViewModel = new RegisterAccountViewModel
+            {
+                Address = new AddressModel()
+            },
+        };
+    }
+
+    protected virtual void AddCommerceComponents(FoundationContact contact, HeaderViewModel viewModel)
+    {
+        if (_databaseMode.DatabaseMode == DatabaseMode.ReadOnly)
+        {
+            viewModel.MiniCart = new MiniCartViewModel();
+            viewModel.WishListMiniCart = new MiniWishlistViewModel();
+            viewModel.SharedMiniCart = new MiniCartViewModel();
+            return;
         }
 
-        private List<DemoUserViewModel> GetDemoUsers(bool showCommerceUsers)
+        viewModel.MiniCart = _cartViewModelFactory.CreateMiniCartViewModel(
+            _cartService.LoadCart(_cartService.DefaultCartName, true)?.Cart);
+
+        viewModel.WishListMiniCart = _cartViewModelFactory.CreateMiniWishListViewModel(
+            _cartService.LoadCart(_cartService.DefaultWishListName, true)?.Cart);
+
+        var organizationId = contact?.FoundationOrganization?.OrganizationId.ToString();
+        if (!organizationId.IsNullOrEmpty())
         {
-            return _customerContext.GetContacts(0, 1000)
-                .Select(_ => new FoundationContact(_))
-                .Where(_ => showCommerceUsers ? _.ShowInDemoUserMenu > 1 : _.ShowInDemoUserMenu == 2)
-                .Select(_ => new DemoUserViewModel
-                {
-                    Description = _.DemoUserDescription,
-                    Title = _.DemoUserTitle,
-                    Id = _.ContactId,
-                    Email = _.Email,
-                    FullName = _.FullName,
-                    SortOrder = _.DemoSortOrder
-                })
-                .OrderBy(_ => _.SortOrder)
-                .ToList();
+            viewModel.SharedMiniCart = _cartViewModelFactory.CreateMiniCartViewModel(
+                _cartService.LoadCart(_cartService.DefaultSharedCartName, organizationId, true)?.Cart, true);
+
+            viewModel.ShowSharedCart = true;
         }
+    }
+
+    protected virtual void AddAnonymousComponents(HomePage homePage, HeaderViewModel viewModel)
+    {
+        if (HttpContextHelper.Current != null && !_httpContextAccessor.HttpContext.User.Identity.IsAuthenticated)
+        {
+            var referenceSettings = _settingsService.GetSiteSettings<ReferencePageSettings>();
+            viewModel.LoginViewModel = new LoginViewModel
+            {
+                ResetPasswordPage = referenceSettings?.ResetPasswordPage ?? ContentReference.StartPage
+            };
+
+            viewModel.RegisterAccountViewModel = new RegisterAccountViewModel
+            {
+                Address = new AddressModel
+                {
+                    CountryRegion = new CountryRegionViewModel
+                    {
+                        SelectClass = "select-menu-small",
+                        TextboxClass = "textbox-small"
+                    }
+                }
+            };
+
+            viewModel.RegisterAccountViewModel.Address.Name = _localizationService.GetString("/Shared/Address/DefaultAddressName", "Default Address");
+        }
+    }
+
+    private List<DemoUserViewModel> GetDemoUsers(bool showCommerceUsers)
+    {
+        return _customerContext.GetContacts(0, 1000)
+            .Select(_ => new FoundationContact(_))
+            .Where(_ => showCommerceUsers ? _.ShowInDemoUserMenu > 1 : _.ShowInDemoUserMenu == 2)
+            .Select(_ => new DemoUserViewModel
+            {
+                Description = _.DemoUserDescription,
+                Title = _.DemoUserTitle,
+                Id = _.ContactId,
+                Email = _.Email,
+                FullName = _.FullName,
+                SortOrder = _.DemoSortOrder
+            })
+            .OrderBy(_ => _.SortOrder)
+            .ToList();
     }
 }

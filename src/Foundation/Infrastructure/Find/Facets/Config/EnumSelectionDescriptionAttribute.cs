@@ -1,10 +1,9 @@
 ﻿using System.ComponentModel;
 
-namespace Foundation.Infrastructure.Find.Facets.Config
+namespace Foundation.Infrastructure.Find.Facets.Config;
+
+public class EnumSelectionDescriptionAttribute : DescriptionAttribute
 {
-    public class EnumSelectionDescriptionAttribute : DescriptionAttribute
-    {
-        public string Text { get; set; }
-        public object Value { get; set; }
-    }
+    public string Text { get; set; }
+    public object Value { get; set; }
 }

@@ -1,12 +1,11 @@
-﻿namespace Foundation.Infrastructure.Commerce.GiftCard
+﻿namespace Foundation.Infrastructure.Commerce.GiftCard;
+
+public interface IGiftCardService
 {
-    public interface IGiftCardService
-    {
-        List<GiftCard> GetAllGiftCards();
-        List<GiftCard> GetCustomerGiftCards(string contactId);
-        string CreateGiftCard(GiftCard giftCard);
-        string UpdateGiftCard(GiftCard giftCard);
-        string DeleteGiftCard(string giftCardId);
-        GiftCard GetGiftCard(string giftCardId);
-    }
+    List<GiftCard> GetAllGiftCards();
+    List<GiftCard> GetCustomerGiftCards(string contactId);
+    string CreateGiftCard(GiftCard giftCard);
+    string UpdateGiftCard(GiftCard giftCard);
+    string DeleteGiftCard(string giftCardId);
+    GiftCard GetGiftCard(string giftCardId);
 }

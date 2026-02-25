@@ -1,23 +1,22 @@
-﻿namespace Foundation.Infrastructure.Cms.Attributes
+﻿namespace Foundation.Infrastructure.Cms.Attributes;
+
+public class LocalizedStringLengthAttribute : StringLengthAttribute
 {
-    public class LocalizedStringLengthAttribute : StringLengthAttribute
+    private readonly string _translationPath;
+
+    public LocalizedStringLengthAttribute(string translationPath, int maximumLength)
+        : base(maximumLength) => _translationPath = translationPath;
+
+    public LocalizedStringLengthAttribute(string translationPath, int minimumLength, int maximumLength)
+        : base(maximumLength)
     {
-        private readonly string _translationPath;
+        _translationPath = translationPath;
+        MinimumLength = minimumLength;
+    }
 
-        public LocalizedStringLengthAttribute(string translationPath, int maximumLength)
-            : base(maximumLength) => _translationPath = translationPath;
-
-        public LocalizedStringLengthAttribute(string translationPath, int minimumLength, int maximumLength)
-            : base(maximumLength)
-        {
-            _translationPath = translationPath;
-            MinimumLength = minimumLength;
-        }
-
-        public override string FormatErrorMessage(string name)
-        {
-            ErrorMessage = LocalizationService.Current.GetString(_translationPath);
-            return base.FormatErrorMessage(name);
-        }
+    public override string FormatErrorMessage(string name)
+    {
+        ErrorMessage = LocalizationService.Current.GetString(_translationPath);
+        return base.FormatErrorMessage(name);
     }
 }

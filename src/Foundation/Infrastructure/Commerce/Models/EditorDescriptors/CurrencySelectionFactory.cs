@@ -1,29 +1,28 @@
 ﻿using Mediachase.Commerce.Markets;
 
-namespace Foundation.Infrastructure.Commerce.Models.EditorDescriptors
+namespace Foundation.Infrastructure.Commerce.Models.EditorDescriptors;
+
+public class CurrencySelectionFactory : ISelectionFactory
 {
-    public class CurrencySelectionFactory : ISelectionFactory
+    private readonly Injected<IMarketService> _marketService;
+
+    public virtual IEnumerable<ISelectItem> GetSelections(ExtendedMetadata metadata)
     {
-        private readonly Injected<IMarketService> _marketService;
+        var markets = _marketService.Service.GetAllMarkets();
+        var currencies = new List<string>();
 
-        public virtual IEnumerable<ISelectItem> GetSelections(ExtendedMetadata metadata)
+        if (markets != null && markets.Any())
         {
-            var markets = _marketService.Service.GetAllMarkets();
-            var currencies = new List<string>();
-
-            if (markets != null && markets.Any())
+            foreach (var market in markets)
             {
-                foreach (var market in markets)
+                foreach (var currency in market.Currencies)
                 {
-                    foreach (var currency in market.Currencies)
-                    {
-                        currencies.Add(currency.CurrencyCode);
-                    }
+                    currencies.Add(currency.CurrencyCode);
                 }
             }
-
-            var items = currencies.Distinct().Select(x => new SelectItem { Text = x, Value = x }).OrderBy(i => i.Text).ToList();
-            return items;
         }
+
+        var items = currencies.Distinct().Select(x => new SelectItem { Text = x, Value = x }).OrderBy(i => i.Text).ToList();
+        return items;
     }
 }

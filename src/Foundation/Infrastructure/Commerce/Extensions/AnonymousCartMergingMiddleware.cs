@@ -2,45 +2,44 @@
 using Mediachase.Commerce.Anonymous;
 using Mediachase.Commerce.Markets;
 
-namespace Foundation.Infrastructure.Commerce.Extensions
+namespace Foundation.Infrastructure.Commerce.Extensions;
+
+public class AnonymousCartMergingMiddleware
 {
-    public class AnonymousCartMergingMiddleware
+    private readonly RequestDelegate _next;
+    private readonly ICurrentMarket _currentMarket;
+
+    public AnonymousCartMergingMiddleware(RequestDelegate next, ICurrentMarket currentMarket)
     {
-        private readonly RequestDelegate _next;
-        private readonly ICurrentMarket _currentMarket;
+        _next = next;
+        _currentMarket = currentMarket;
+    }
 
-        public AnonymousCartMergingMiddleware(RequestDelegate next, ICurrentMarket currentMarket)
+    public async Task InvokeAsync(HttpContext context)
+    {
+        if (context.User.Identity is { IsAuthenticated: true })
         {
-            _next = next;
-            _currentMarket = currentMarket;
-        }
+            var anonymousId = context.Features.Get<IAnonymousIdFeature>()?.AnonymousId;
 
-        public async Task InvokeAsync(HttpContext context)
-        {
-            if (context.User.Identity is { IsAuthenticated: true })
+            if (!string.IsNullOrWhiteSpace(anonymousId))
             {
-                var anonymousId = context.Features.Get<IAnonymousIdFeature>()?.AnonymousId;
+                var orderRepository = ServiceLocator.Current.GetInstance<IOrderRepository>();
+                var marketService = ServiceLocator.Current.GetInstance<IMarketService>();
 
-                if (!string.IsNullOrWhiteSpace(anonymousId))
+                var currentMarket = _currentMarket.GetCurrentMarket();
+                var cart = orderRepository.LoadCart<ICart>(new Guid(anonymousId), DefaultCartName, currentMarket.MarketId);
+
+                if (cart != null && cart.GetAllLineItems().ToList().Count > 0)
                 {
-                    var orderRepository = ServiceLocator.Current.GetInstance<IOrderRepository>();
-                    var marketService = ServiceLocator.Current.GetInstance<IMarketService>();
+                    cart.MarketId = currentMarket.MarketId;
+                    orderRepository.Save(cart);
 
-                    var currentMarket = _currentMarket.GetCurrentMarket();
-                    var cart = orderRepository.LoadCart<ICart>(new Guid(anonymousId), DefaultCartName, currentMarket.MarketId);
-
-                    if (cart != null && cart.GetAllLineItems().ToList().Count > 0)
-                    {
-                        cart.MarketId = currentMarket.MarketId;
-                        orderRepository.Save(cart);
-
-                        var profileMigrator = ServiceLocator.Current.GetInstance<IProfileMigrator>();
-                        profileMigrator.MigrateCarts(new Guid(anonymousId));
-                    }
+                    var profileMigrator = ServiceLocator.Current.GetInstance<IProfileMigrator>();
+                    profileMigrator.MigrateCarts(new Guid(anonymousId));
                 }
             }
-            await _next(context);
         }
-        public string DefaultCartName => "Default" + SiteDefinition.Current.StartPage.ID;
+        await _next(context);
     }
+    public string DefaultCartName => "Default" + SiteDefinition.Current.StartPage.ID;
 }

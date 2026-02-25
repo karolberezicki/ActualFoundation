@@ -1,14 +1,13 @@
-namespace Foundation.Features.Blocks.ElevatedRoleBlock
+namespace Foundation.Features.Blocks.ElevatedRoleBlock;
+
+public class ElevatedRoleSelectionFactory : ISelectionFactory
 {
-    public class ElevatedRoleSelectionFactory : ISelectionFactory
+    public virtual IEnumerable<ISelectItem> GetSelections(ExtendedMetadata metadata)
     {
-        public virtual IEnumerable<ISelectItem> GetSelections(ExtendedMetadata metadata)
+        return new ISelectItem[]
         {
-            return new ISelectItem[]
-            {
-                new SelectItem { Text = "None", Value = "None"},
-                new SelectItem { Text = "Reader", Value = "Reader"}
-            };
-        }
+            new SelectItem { Text = "None", Value = "None"},
+            new SelectItem { Text = "Reader", Value = "Reader"}
+        };
     }
 }

@@ -1,22 +1,21 @@
 ﻿using EPiServer.Framework.Serialization;
 using Newtonsoft.Json;
 
-namespace Foundation.Infrastructure.Find.Facets.Config
+namespace Foundation.Infrastructure.Find.Facets.Config;
+
+public class PropertyListBase<T> : PropertyList<T>
 {
-    public class PropertyListBase<T> : PropertyList<T>
+    private Injected<IObjectSerializerFactory> _objectSerializerFactory;
+
+    private IObjectSerializer _objectSerializer;
+
+    public PropertyListBase()
     {
-        private Injected<IObjectSerializerFactory> _objectSerializerFactory;
+        _objectSerializer = this._objectSerializerFactory.Service.GetSerializer("application/json");
+    }
 
-        private IObjectSerializer _objectSerializer;
-
-        public PropertyListBase()
-        {
-            _objectSerializer = this._objectSerializerFactory.Service.GetSerializer("application/json");
-        }
-
-        protected override T ParseItem(string value)
-        {
-            return JsonConvert.DeserializeObject<T>(value);
-        }
+    protected override T ParseItem(string value)
+    {
+        return JsonConvert.DeserializeObject<T>(value);
     }
 }

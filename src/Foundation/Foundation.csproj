@@ -62,7 +62,7 @@
     <PackageReference Include="Schema.NET" Version="13.0.0" />
     <PackageReference Include="System.Linq.Async" Version="7.0.0" />
     <PackageReference Include="Wangkanai.Detection" Version="8.20.0" />
-    <PackageReference Include="Serilog" Version="4.3.0" />
+    <PackageReference Include="Serilog" Version="4.3.1" />
     <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
   </ItemGroup>
@@ -70,16 +70,6 @@
 	  <EmbeddedResource Include="lang\**\*" />
 	  <None Update="App_Data\**" CopyToOutputDirectory="PreserveNewest" />
 	  <None Update="modules\_protected\Foundation\**" CopyToOutputDirectory="PreserveNewest" />
-	  <Compile Remove="Features\MultiShipment\**" />
-	  <Compile Remove="Infrastructure\Plugins\**" />
-	  <Content Remove="Features\MultiShipment\**" />
-	  <Content Remove="Infrastructure\Plugins\**" />
-	  <EmbeddedResource Remove="Features\MultiShipment\**" />
-	  <EmbeddedResource Remove="Infrastructure\Plugins\**" />
-	  <None Remove="Features\MultiShipment\**" />
-	  <Compile Remove="Infrastructure\Display\FoundationDisplayModeProvider.cs" />
-	  <Compile Remove="Infrastructure\Kpi\FilledInFormKpi.cs" />
-	  <Folder Include="Infrastructure\Kpi\" />
 	  <Folder Include="wwwroot\" />
   </ItemGroup>
 </Project>

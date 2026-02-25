@@ -2,23 +2,22 @@
 using EPiServer.Find.Api.Querying;
 using Newtonsoft.Json;
 
-namespace Foundation.Infrastructure.Find.Facets
+namespace Foundation.Infrastructure.Find.Facets;
+
+[JsonConverter(typeof(RangeFacetRequestConverter))]
+public class RangeFacetFilterRequest : FacetFilterRequest
 {
-    [JsonConverter(typeof(RangeFacetRequestConverter))]
-    public class RangeFacetFilterRequest : FacetFilterRequest
-    {
-        public RangeFacetFilterRequest(string name, Filter facetFilter)
-            : base(name, facetFilter) => Ranges = new List<NumericRange>();
+    public RangeFacetFilterRequest(string name, Filter facetFilter)
+        : base(name, facetFilter) => Ranges = new List<NumericRange>();
 
-        [JsonProperty("field", NullValueHandling = NullValueHandling.Ignore)]
-        public string Field { get; set; }
+    [JsonProperty("field", NullValueHandling = NullValueHandling.Ignore)]
+    public string Field { get; set; }
 
-        [JsonProperty("key_field", NullValueHandling = NullValueHandling.Ignore)]
-        public string KeyField { get; set; }
+    [JsonProperty("key_field", NullValueHandling = NullValueHandling.Ignore)]
+    public string KeyField { get; set; }
 
-        [JsonProperty("value_field", NullValueHandling = NullValueHandling.Ignore)]
-        public string ValueField { get; set; }
+    [JsonProperty("value_field", NullValueHandling = NullValueHandling.Ignore)]
+    public string ValueField { get; set; }
 
-        [JsonProperty("ranges")] public List<NumericRange> Ranges { get; }
-    }
+    [JsonProperty("ranges")] public List<NumericRange> Ranges { get; }
 }

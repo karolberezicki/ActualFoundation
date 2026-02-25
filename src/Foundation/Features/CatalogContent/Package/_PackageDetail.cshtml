@@ -3,7 +3,7 @@
 @model GenericPackageViewModel
 
 @{
-    var shareTitle = Uri.EscapeUriString("Check out this product: " + Model.CurrentContent.DisplayName);
+    var shareTitle = Uri.EscapeDataString("Check out this product: " + Model.CurrentContent.DisplayName);
     var shareUrl = WebUtility.UrlEncode(Context.Request.Path.ToString());
 }
 

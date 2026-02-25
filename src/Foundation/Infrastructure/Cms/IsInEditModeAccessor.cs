@@ -1,4 +1,3 @@
-namespace Foundation.Infrastructure.Cms
-{
-    public delegate bool IsInEditModeAccessor();
-}
+namespace Foundation.Infrastructure.Cms;
+
+public delegate bool IsInEditModeAccessor();

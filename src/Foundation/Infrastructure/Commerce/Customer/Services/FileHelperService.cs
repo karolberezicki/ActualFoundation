@@ -1,18 +1,17 @@
 ﻿using FileHelpers;
 using System.IO;
 
-namespace Foundation.Infrastructure.Commerce.Customer.Services
+namespace Foundation.Infrastructure.Commerce.Customer.Services;
+
+public class FileHelperService : IFileHelperService
 {
-    public class FileHelperService : IFileHelperService
+    public T[] GetImportData<T>(Stream file) where T : class
     {
-        public T[] GetImportData<T>(Stream file) where T : class
-        {
-            var reader = new StreamReader(file);
+        var reader = new StreamReader(file);
 
-            var fileEngine = new FileHelperEngine(typeof(T));
-            fileEngine.ErrorManager.ErrorMode = ErrorMode.IgnoreAndContinue;
+        var fileEngine = new FileHelperEngine(typeof(T));
+        fileEngine.ErrorManager.ErrorMode = ErrorMode.IgnoreAndContinue;
 
-            return fileEngine.ReadStream(reader, int.MaxValue) as T[];
-        }
+        return fileEngine.ReadStream(reader, int.MaxValue) as T[];
     }
 }

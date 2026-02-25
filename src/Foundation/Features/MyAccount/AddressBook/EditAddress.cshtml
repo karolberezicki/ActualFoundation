@@ -3,28 +3,17 @@
 
 @model AddressViewModel
 
-@{
-    var isMultiShipment = (bool)(ViewData["IsInMultiShipment"] == null ? false : ViewData["IsInMultiShipment"]);
-    var multiShipmentPageUrl = ViewData["MultiShipmentUrl"];
-}
+<div class="col-md-12 col-lg-3">
+    @(await Component.InvokeAsync("MyAccountNavigation", new { id = MyAccountPageType.Link }))
+</div>
 
-@if (!isMultiShipment)
-{
-    <div class="col-md-12 col-lg-3">
-        @(await Component.InvokeAsync("MyAccountNavigation", new { id = MyAccountPageType.Link }))
+<div class="col-md-12 col-lg-9">
+    <div class="col-12 page-title">
+        <h2>@Html.TranslateFallback("/Dashboard/Labels/MyAccount", "My Account")</h2>
     </div>
-}
-
-<div class="@(isMultiShipment ? "col-12" : "col-md-12 col-lg-9")">
-    @if (!isMultiShipment)
-    {
-        <div class="col-12 page-title">
-            <h2>@Html.TranslateFallback("/Dashboard/Labels/MyAccount", "My Account")</h2>
-        </div>
-    }
     <p>@Html.PropertyFor(model => model.CurrentContent.MainBody)</p>
     <div class="col-xs-12 col-md-12 jsAddressBook">
-        @using (Html.BeginForm("Save", "AddressBook", new { returnUrl = isMultiShipment ? multiShipmentPageUrl : "" }, FormMethod.Post))
+        @using (Html.BeginForm("Save", "AddressBook", FormMethod.Post))
         {
             @Html.AntiForgeryToken()
             <h4>

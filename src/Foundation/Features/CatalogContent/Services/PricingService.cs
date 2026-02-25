@@ -1,75 +1,74 @@
-﻿namespace Foundation.Features.CatalogContent.Services
+﻿namespace Foundation.Features.CatalogContent.Services;
+
+public interface IPricingService
 {
-    public interface IPricingService
+    IList<IPriceValue> GetPriceList(string code, MarketId marketId, PriceFilter priceFilter);
+    IList<IPriceValue> GetPriceList(IEnumerable<CatalogKey> catalogKeys, MarketId marketId, PriceFilter priceFilter);
+    Money? GetCurrentPrice(string code);
+    Money? GetPrice(string code, MarketId marketId, Currency currency);
+}
+
+public class PricingService : IPricingService
+{
+    private readonly IPriceService _priceService;
+    private readonly ICurrentMarket _currentMarket;
+    private readonly ICurrencyService _currencyService;
+
+    public PricingService(IPriceService priceService,
+        ICurrentMarket currentMarket,
+        ICurrencyService currencyService)
     {
-        IList<IPriceValue> GetPriceList(string code, MarketId marketId, PriceFilter priceFilter);
-        IList<IPriceValue> GetPriceList(IEnumerable<CatalogKey> catalogKeys, MarketId marketId, PriceFilter priceFilter);
-        Money? GetCurrentPrice(string code);
-        Money? GetPrice(string code, MarketId marketId, Currency currency);
+        _priceService = priceService;
+        _currentMarket = currentMarket;
+        _currencyService = currencyService;
     }
 
-    public class PricingService : IPricingService
+    public IList<IPriceValue> GetPriceList(string code, MarketId marketId, PriceFilter priceFilter)
     {
-        private readonly IPriceService _priceService;
-        private readonly ICurrentMarket _currentMarket;
-        private readonly ICurrencyService _currencyService;
-
-        public PricingService(IPriceService priceService,
-            ICurrentMarket currentMarket,
-            ICurrencyService currencyService)
+        if (string.IsNullOrEmpty(code))
         {
-            _priceService = priceService;
-            _currentMarket = currentMarket;
-            _currencyService = currencyService;
+            throw new ArgumentNullException(nameof(code));
         }
 
-        public IList<IPriceValue> GetPriceList(string code, MarketId marketId, PriceFilter priceFilter)
+        var catalogKey = new CatalogKey(code);
+
+        return _priceService.GetPrices(marketId, DateTime.Now, catalogKey, priceFilter)
+            .OrderBy(x => x.UnitPrice.Amount)
+            .ToList();
+    }
+
+    public IList<IPriceValue> GetPriceList(IEnumerable<CatalogKey> catalogKeys, MarketId marketId, PriceFilter priceFilter)
+    {
+        if (catalogKeys == null)
         {
-            if (string.IsNullOrEmpty(code))
+            throw new ArgumentNullException(nameof(catalogKeys));
+        }
+
+        if (!catalogKeys.Any())
+        {
+            return Enumerable.Empty<IPriceValue>().ToList();
+        }
+
+        return _priceService.GetPrices(marketId, DateTime.Now, catalogKeys, priceFilter)
+            .OrderBy(x => x.UnitPrice.Amount)
+            .ToList();
+    }
+
+    public Money? GetCurrentPrice(string code)
+    {
+        var market = _currentMarket.GetCurrentMarket();
+        var currency = _currencyService.GetCurrentCurrency();
+        return GetPrice(code, market.MarketId, currency);
+    }
+
+    public Money? GetPrice(string code, MarketId marketId, Currency currency)
+    {
+        var prices = GetPriceList(code, marketId,
+            new PriceFilter
             {
-                throw new ArgumentNullException(nameof(code));
-            }
+                Currencies = new[] { currency }
+            });
 
-            var catalogKey = new CatalogKey(code);
-
-            return _priceService.GetPrices(marketId, DateTime.Now, catalogKey, priceFilter)
-                .OrderBy(x => x.UnitPrice.Amount)
-                .ToList();
-        }
-
-        public IList<IPriceValue> GetPriceList(IEnumerable<CatalogKey> catalogKeys, MarketId marketId, PriceFilter priceFilter)
-        {
-            if (catalogKeys == null)
-            {
-                throw new ArgumentNullException(nameof(catalogKeys));
-            }
-
-            if (!catalogKeys.Any())
-            {
-                return Enumerable.Empty<IPriceValue>().ToList();
-            }
-
-            return _priceService.GetPrices(marketId, DateTime.Now, catalogKeys, priceFilter)
-                .OrderBy(x => x.UnitPrice.Amount)
-                .ToList();
-        }
-
-        public Money? GetCurrentPrice(string code)
-        {
-            var market = _currentMarket.GetCurrentMarket();
-            var currency = _currencyService.GetCurrentCurrency();
-            return GetPrice(code, market.MarketId, currency);
-        }
-
-        public Money? GetPrice(string code, MarketId marketId, Currency currency)
-        {
-            var prices = GetPriceList(code, marketId,
-                new PriceFilter
-                {
-                    Currencies = new[] { currency }
-                });
-
-            return prices.Any() ? prices.First().UnitPrice : (Money?)null;
-        }
+        return prices.Any() ? prices.First().UnitPrice : (Money?)null;
     }
 }

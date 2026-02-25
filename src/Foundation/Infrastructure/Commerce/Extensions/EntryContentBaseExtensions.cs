@@ -3,365 +3,347 @@ using EPiServer.Find.Commerce.Services.Internal;
 using Foundation.Infrastructure.Cms;
 using Mediachase.Commerce.InventoryService;
 using Mediachase.Commerce.Markets;
+using System.Diagnostics.CodeAnalysis;
 
-namespace Foundation.Infrastructure.Commerce.Extensions
+namespace Foundation.Infrastructure.Commerce.Extensions;
+
+[SuppressMessage("ReSharper", "MemberCanBePrivate.Global", Justification = "Extension methods")]
+[SuppressMessage("ReSharper", "UnusedMember.Global", Justification = "Extension methods")]
+public static class EntryContentBaseExtensions
 {
-    public static class EntryContentBaseExtensions
+    private const int _maxHistory = 10;
+    private const string _delimiter = "^!!^";
+
+    private static readonly Lazy<IInventoryService> _inventoryService = new(() => ServiceLocator.Current.GetInstance<IInventoryService>());
+
+    private static readonly Lazy<ReferenceConverter> _referenceConverter = new(() => ServiceLocator.Current.GetInstance<ReferenceConverter>());
+
+    private static readonly Lazy<IPriceService> _priceService = new(() => ServiceLocator.Current.GetInstance<IPriceService>());
+
+    private static readonly Lazy<UrlResolver> _urlResolver = new(() => ServiceLocator.Current.GetInstance<UrlResolver>());
+
+    private static readonly Lazy<ICookieService> _cookieService = new(() => ServiceLocator.Current.GetInstance<ICookieService>());
+
+    private static readonly Lazy<ICurrentMarket> _currentMarket = new(() => ServiceLocator.Current.GetInstance<ICurrentMarket>());
+
+    private static readonly Lazy<IMarketService> _marketService = new(() => ServiceLocator.Current.GetInstance<IMarketService>());
+
+    private static readonly Lazy<IRelationRepository> _relationRepository = new(() => ServiceLocator.Current.GetInstance<IRelationRepository>());
+
+    private static readonly Lazy<IContentLoader> _contentLoader = new(() => ServiceLocator.Current.GetInstance<IContentLoader>());
+
+    public static IEnumerable<Inventory> Inventories(this EntryContentBase entryContentBase)
     {
-        private const int MaxHistory = 10;
-        private const string Delimiter = "^!!^";
-
-        private static readonly Lazy<IInventoryService> InventoryService =
-            new Lazy<IInventoryService>(() => ServiceLocator.Current.GetInstance<IInventoryService>());
-
-        private static readonly Lazy<ReferenceConverter> ReferenceConverter =
-            new Lazy<ReferenceConverter>(() => ServiceLocator.Current.GetInstance<ReferenceConverter>());
-
-        private static readonly Lazy<IPriceService> PriceService =
-            new Lazy<IPriceService>(() => ServiceLocator.Current.GetInstance<IPriceService>());
-
-        private static readonly Lazy<UrlResolver> UrlResolver =
-            new Lazy<UrlResolver>(() => ServiceLocator.Current.GetInstance<UrlResolver>());
-
-        private static readonly Lazy<ICookieService> CookieService =
-            new Lazy<ICookieService>(() => ServiceLocator.Current.GetInstance<ICookieService>());
-
-        private static readonly Lazy<ICurrentMarket> CurrentMarket =
-            new Lazy<ICurrentMarket>(() => ServiceLocator.Current.GetInstance<ICurrentMarket>());
-
-        private static readonly Lazy<IMarketService> MarketService =
-            new Lazy<IMarketService>(() => ServiceLocator.Current.GetInstance<IMarketService>());
-
-        private static readonly Lazy<IRelationRepository> RelationRepository =
-            new Lazy<IRelationRepository>(() => ServiceLocator.Current.GetInstance<IRelationRepository>());
-
-        private static readonly Lazy<IContentLoader> ContentLoader =
-            new Lazy<IContentLoader>(() => ServiceLocator.Current.GetInstance<IContentLoader>());
-
-        public static IEnumerable<Inventory> Inventories(this EntryContentBase entryContentBase)
+        switch (entryContentBase)
         {
-            if (entryContentBase is ProductContent productContent)
-            {
-                var variations = ContentLoader.Value
-                    .GetItems(productContent.GetVariants(RelationRepository.Value), productContent.Language)
-                    .OfType<VariationContent>();
-                return variations.SelectMany(x => x.GetStockPlacement());
-            }
-
-            if (entryContentBase is PackageContent packageContent)
-            {
-                return packageContent.ContentLink.GetStockPlacements();
-            }
-
-            return entryContentBase is VariationContent variationContent
-                ? variationContent.ContentLink.GetStockPlacements()
-                : Enumerable.Empty<Inventory>();
-        }
-
-        public static decimal DefaultPrice(this EntryContentBase entryContentBase)
-        {
-            var market = MarketService.Value.GetAllMarkets()
-                .FirstOrDefault(x => x.DefaultLanguage.Name.Equals(entryContentBase.Language.Name));
-
-            if (market == null)
-            {
-                return 0m;
-            }
-
-            var minPrice = new Price();
-            if (entryContentBase is ProductContent productContent)
-            {
-                var variationLinks = productContent.GetVariants(RelationRepository.Value);
-                foreach (var variationLink in variationLinks)
+            case ProductContent productContent:
                 {
-                    var defaultPrice =
-                        variationLink.GetDefaultPrice(market.MarketId, market.DefaultCurrency, DateTime.UtcNow);
-
-                    if ((defaultPrice.UnitPrice.Amount < minPrice.UnitPrice.Amount && defaultPrice.UnitPrice.Amount > 0) || minPrice.UnitPrice.Amount == 0)
-                    {
-                        minPrice = defaultPrice;
-                    }
+                    var variations = _contentLoader.Value
+                        .GetItems(productContent.GetVariants(_relationRepository.Value), productContent.Language)
+                        .OfType<VariationContent>();
+                    return variations.SelectMany(x => x.GetStockPlacement());
                 }
+            case PackageContent packageContent:
+                return packageContent.ContentLink.GetStockPlacements();
+            case VariationContent variationContent:
+                return variationContent.ContentLink.GetStockPlacements();
+            default:
+                return [];
+        }
+    }
 
-                return minPrice.UnitPrice.Amount;
-            }
+    public static decimal DefaultPrice(this EntryContentBase entryContentBase)
+    {
+        var market = _marketService.Value.GetAllMarkets()
+            .FirstOrDefault(x => x.DefaultLanguage.Name.Equals(entryContentBase.Language.Name));
 
-            if (entryContentBase is PackageContent packageContent)
-            {
-                return packageContent.ContentLink
-                           .GetDefaultPrice(market.MarketId, market.DefaultCurrency, DateTime.UtcNow)?.UnitPrice
-                           .Amount ?? 0m;
-            }
-
-            if (entryContentBase is VariationContent variationContent)
-            {
-                return variationContent.ContentLink
-                           .GetDefaultPrice(market.MarketId, market.DefaultCurrency, DateTime.UtcNow)?.UnitPrice
-                           .Amount ?? 0m;
-            }
-
+        if (market == null)
+        {
             return 0m;
         }
 
-        public static IEnumerable<Price> Prices(this EntryContentBase entryContentBase)
+        var minPrice = new Price();
+        switch (entryContentBase)
         {
-            //var market = MarketService.Value.GetAllMarkets().FirstOrDefault(x => x.DefaultLanguage.Name.Equals(entryContentBase.Language.Name));
-            var market = CurrentMarket.Value.GetCurrentMarket();
+            case ProductContent productContent:
+                {
+                    var variationLinks = productContent.GetVariants(_relationRepository.Value);
+                    foreach (var variationLink in variationLinks)
+                    {
+                        var defaultPrice =
+                            variationLink.GetDefaultPrice(market.MarketId, market.DefaultCurrency, DateTime.UtcNow);
 
-            if (market == null)
+                        if ((defaultPrice.UnitPrice.Amount < minPrice.UnitPrice.Amount && defaultPrice.UnitPrice.Amount > 0) ||
+                            minPrice.UnitPrice.Amount == 0)
+                        {
+                            minPrice = defaultPrice;
+                        }
+                    }
+
+                    return minPrice.UnitPrice.Amount;
+                }
+            case PackageContent packageContent:
+                return packageContent.ContentLink
+                    .GetDefaultPrice(market.MarketId, market.DefaultCurrency, DateTime.UtcNow)?.UnitPrice
+                    .Amount ?? 0m;
+            case VariationContent variationContent:
+                return variationContent.ContentLink
+                    .GetDefaultPrice(market.MarketId, market.DefaultCurrency, DateTime.UtcNow)?.UnitPrice
+                    .Amount ?? 0m;
+            default:
+                return 0m;
+        }
+    }
+
+    public static IEnumerable<Price> Prices(this EntryContentBase entryContentBase)
+    {
+        var market = _currentMarket.Value.GetCurrentMarket();
+
+        if (market == null)
+        {
+            return [];
+        }
+
+        var priceFilter = new PriceFilter { CustomerPricing = [CustomerPricing.AllCustomers] };
+
+        switch (entryContentBase)
+        {
+            case ProductContent productContent:
+                {
+                    var variationLinks = productContent.GetVariants();
+                    return variationLinks.GetPrices(market.MarketId, priceFilter);
+                }
+            case PackageContent packageContent:
+                return packageContent.ContentLink.GetPrices(market.MarketId, priceFilter);
+            case VariationContent variationContent:
+                return variationContent.ContentLink.GetPrices(market.MarketId, priceFilter);
+            default:
+                return [];
+        }
+    }
+
+    public static IEnumerable<VariationContent> VariationContents(this ProductContent productContent)
+    {
+        return _contentLoader.Value
+            .GetItems(productContent.GetVariants(_relationRepository.Value), productContent.Language)
+            .OfType<VariationContent>();
+    }
+
+    public static IEnumerable<string> Outline(this EntryContentBase productContent)
+    {
+        var nodes = _contentLoader.Value
+            .GetItems(productContent.GetNodeRelations().Select(x => x.Parent), productContent.Language)
+            .OfType<NodeContent>();
+
+        return nodes.Select(x => GetOutlineForNode(x.Code));
+    }
+
+    public static int SortOrder(this EntryContentBase productContent)
+    {
+        var node = productContent.GetNodeRelations().FirstOrDefault();
+        return node?.SortOrder ?? 0;
+    }
+
+    public static CatalogKey GetCatalogKey(this EntryContentBase productContent) => new(productContent.Code);
+
+    public static CatalogKey GetCatalogKey(this ContentReference contentReference) => new(_referenceConverter.Value.GetCode(contentReference));
+
+    public static ItemCollection<Inventory> GetStockPlacements(this ContentReference contentLink)
+    {
+        var code = contentLink.ToReferenceWithoutVersion().GetCode();
+        return string.IsNullOrEmpty(code)
+            ? []
+            : new ItemCollection<Inventory>(_inventoryService.Value.QueryByEntry([code]).Select(x =>
+                new Inventory(x) { ContentLink = contentLink }));
+    }
+
+    public static Price GetDefaultPrice(this ContentReference contentLink, MarketId marketId, Currency currency, DateTime validOn)
+    {
+        var catalogKey = new CatalogKey(_referenceConverter.Value.GetCode(contentLink));
+
+        var priceValue = _priceService.Value.GetPrices(marketId, validOn, catalogKey, new() { Currencies = [currency] })
+            .OrderBy(x => x.UnitPrice).FirstOrDefault();
+        return priceValue == null ? new() : new Price(priceValue);
+    }
+
+    public static IEnumerable<Price> GetPrices(this ContentReference entryContents,
+        MarketId marketId, PriceFilter priceFilter) => new[] { entryContents }.GetPrices(marketId, priceFilter);
+
+    public static IEnumerable<Price> GetPrices(this IEnumerable<ContentReference> entryContents, MarketId marketId, PriceFilter priceFilter)
+    {
+        var customerPricingList = priceFilter.CustomerPricing != null
+            ? priceFilter.CustomerPricing.Where(x => x != null).ToList()
+            : Enumerable.Empty<CustomerPricing>().ToList();
+
+        var entryContentsList = entryContents.Where(x => x != null).ToList();
+
+        var catalogKeys = entryContentsList.Select(GetCatalogKey).ToList();
+        IEnumerable<IPriceValue> priceCollection;
+        if (marketId == MarketId.Empty && (customerPricingList.Count == 0 ||
+                                           customerPricingList.Any(x => string.IsNullOrEmpty(x.PriceCode))))
+        {
+            priceCollection = _priceService.Value.GetCatalogEntryPrices(catalogKeys);
+        }
+        else
+        {
+            var customerPricingWithPriceCode =
+                customerPricingList.Where(x => !string.IsNullOrEmpty(x.PriceCode)).ToList();
+            if (customerPricingWithPriceCode.Count != 0)
             {
-                return Enumerable.Empty<Price>();
+                priceFilter.CustomerPricing = customerPricingWithPriceCode;
             }
 
-            var priceFilter = new PriceFilter
+            priceCollection = _priceService.Value.GetPrices(marketId, DateTime.UtcNow, catalogKeys, priceFilter).ToList();
+
+            // if the entry has no price without sale code
+            if (!priceCollection.Any())
             {
-                CustomerPricing = new[] { CustomerPricing.AllCustomers }
+                priceCollection = _priceService.Value.GetCatalogEntryPrices(catalogKeys)
+                    .Where(x => x.ValidFrom <= DateTime.Now && (!x.ValidUntil.HasValue || x.ValidUntil.Value >= DateTime.Now))
+                    .Where(x => x.MarketId == marketId);
+            }
+        }
+
+        return priceCollection.Select(x => new Price(x));
+    }
+
+    public static string GetCode(this ContentReference contentLink) => _referenceConverter.Value.GetCode(contentLink);
+
+    public static EntryContentBase GetEntryContent(this CatalogKey catalogKey)
+    {
+        var entryContentLink = _referenceConverter.Value
+            .GetContentLink(catalogKey.CatalogEntryCode, CatalogContentType.CatalogEntry);
+
+        return _contentLoader.Value.Get<EntryContentBase>(entryContentLink);
+    }
+
+    public static IEnumerable<VariationContent> GetAllVariants(this ContentReference contentLink)
+    {
+        return contentLink.GetAllVariants<VariationContent>();
+    }
+
+    public static IEnumerable<T> GetAllVariants<T>(this ContentReference contentLink) where T : VariationContent
+    {
+        switch (_referenceConverter.Value.GetContentType(contentLink))
+        {
+            case CatalogContentType.CatalogNode:
+                var children = _contentLoader.Value.GetChildren<CatalogContentBase>(contentLink, [LanguageLoaderOption.FallbackWithMaster()]).ToList();
+
+                var variants = children.OfType<T>().ToList();
+                var products = children.OfType<ProductContent>();
+                foreach (var productContent in products)
+                {
+                    variants.AddRange(productContent.GetVariants()
+                        .Select(c => _contentLoader.Value.Get<T>(c)));
+                }
+
+                return variants;
+
+            case CatalogContentType.CatalogEntry:
+
+                var entryContent = _contentLoader.Value.Get<EntryContentBase>(contentLink);
+
+                switch (entryContent)
+                {
+                    case ProductContent p:
+                        return p.GetVariants().Select(c => _contentLoader.Value.Get<T>(c));
+                    case T entryContentBase:
+                        return [entryContentBase];
+                }
+
+                break;
+        }
+
+        return [];
+    }
+
+    private static string GetOutlineForNode(string nodeCode)
+    {
+        if (string.IsNullOrEmpty(nodeCode))
+        {
+            return "";
+        }
+
+        var outline = nodeCode;
+        var currentNode = _contentLoader.Value.Get<NodeContent>(_referenceConverter.Value.GetContentLink(nodeCode));
+        var parent = _contentLoader.Value.Get<CatalogContentBase>(currentNode.ParentLink);
+        while (!ContentReference.IsNullOrEmpty(parent.ParentLink))
+        {
+            outline = parent switch
+            {
+                CatalogContent catalog => string.Format("{1}/{0}", outline, catalog.Name),
+                NodeContent parentNode => string.Format("{1}/{0}", outline, parentNode.Code),
+                _ => outline,
             };
 
-            if (entryContentBase is ProductContent productContent)
+            parent = _contentLoader.Value.Get<CatalogContentBase>(parent.ParentLink);
+        }
+
+        return outline;
+    }
+
+    public static string GetUrl(this EntryContentBase entry) => entry.GetUrl(_relationRepository.Value, _urlResolver.Value);
+
+    public static string GetUrl(this EntryContentBase entry, IRelationRepository linksRepository, UrlResolver urlResolver)
+    {
+        var productLink = entry is VariationContent
+            ? entry.GetParentProducts(linksRepository).FirstOrDefault()
+            : entry.ContentLink;
+
+        if (productLink == null)
+        {
+            return string.Empty;
+        }
+
+        var urlBuilder = new UrlBuilder(urlResolver.GetUrl(productLink));
+
+        if (entry.Code != null && entry is VariationContent)
+        {
+            urlBuilder.QueryCollection.Add("variationCode", entry.Code);
+        }
+
+        return urlBuilder.ToString();
+    }
+
+    public static void AddBrowseHistory(this EntryContentBase entry)
+    {
+        var history = _cookieService.Value.Get("BrowseHistory");
+        var values = string.IsNullOrEmpty(history)
+            ? []
+            : history.Split([_delimiter], StringSplitOptions.RemoveEmptyEntries).ToList();
+
+        if (values.Contains(entry.Code))
+        {
+            return;
+        }
+
+        if (values.Count != 0)
+        {
+            if (values.Count == _maxHistory)
             {
-                var variationLinks = productContent.GetVariants();
-                return variationLinks.GetPrices(market.MarketId, priceFilter);
+                values.RemoveAt(0);
             }
-
-            if (entryContentBase is PackageContent packageContent)
-            {
-                return packageContent.ContentLink.GetPrices(market.MarketId, priceFilter);
-            }
-
-            return entryContentBase is VariationContent variationContent
-                ? variationContent.ContentLink.GetPrices(market.MarketId, priceFilter)
-                : Enumerable.Empty<Price>();
         }
 
-        public static IEnumerable<VariationContent> VariationContents(this ProductContent productContent)
+        values.Add(entry.Code);
+
+        _cookieService.Value.Set("BrowseHistory", string.Join(_delimiter, values));
+    }
+
+    public static IList<EntryContentBase> GetBrowseHistory()
+    {
+        var entryCodes = _cookieService.Value.Get("BrowseHistory");
+        if (string.IsNullOrEmpty(entryCodes))
         {
-            return ContentLoader.Value
-                .GetItems(productContent.GetVariants(RelationRepository.Value), productContent.Language)
-                .OfType<VariationContent>();
+            return new List<EntryContentBase>();
         }
 
-        public static IEnumerable<string> Outline(this EntryContentBase productContent)
-        {
-            var nodes = ContentLoader.Value
-                .GetItems(productContent.GetNodeRelations().Select(x => x.Parent), productContent.Language)
-                .OfType<NodeContent>();
+        var contentLinks = _referenceConverter.Value.GetContentLinks(entryCodes.Split([
+            _delimiter,
+        ], StringSplitOptions.RemoveEmptyEntries));
 
-            return nodes.Select(x => GetOutlineForNode(x.Code));
-        }
-
-        public static int SortOrder(this EntryContentBase productContent)
-        {
-            var node = productContent.GetNodeRelations().FirstOrDefault();
-            return node?.SortOrder ?? 0;
-        }
-
-        public static CatalogKey GetCatalogKey(this EntryContentBase productContent) => new CatalogKey(productContent.Code);
-
-        public static CatalogKey GetCatalogKey(this ContentReference contentReference) => new CatalogKey(ReferenceConverter.Value.GetCode(contentReference));
-
-        public static ItemCollection<Inventory> GetStockPlacements(this ContentReference contentLink)
-        {
-            var code = GetCode(contentLink.ToReferenceWithoutVersion());
-            return string.IsNullOrEmpty(code)
-                ? new ItemCollection<Inventory>()
-                : new ItemCollection<Inventory>(InventoryService.Value.QueryByEntry(new[] { code }).Select(x =>
-                      new Inventory(x)
-                      {
-                          ContentLink = contentLink
-                      }));
-        }
-
-        public static Price GetDefaultPrice(this ContentReference contentLink, MarketId marketId, Currency currency, DateTime validOn)
-        {
-            var catalogKey = new CatalogKey(ReferenceConverter.Value.GetCode(contentLink));
-
-            var priceValue = PriceService.Value.GetPrices(marketId, validOn, catalogKey, new PriceFilter() { Currencies = new[] { currency } })
-                .OrderBy(x => x.UnitPrice).FirstOrDefault();
-            return priceValue == null ? new Price() : new Price(priceValue);
-        }
-
-        public static IEnumerable<Price> GetPrices(this ContentReference entryContents,
-            MarketId marketId, PriceFilter priceFilter) => new[] { entryContents }.GetPrices(marketId, priceFilter);
-
-        public static IEnumerable<Price> GetPrices(this IEnumerable<ContentReference> entryContents, MarketId marketId, PriceFilter priceFilter)
-        {
-            var customerPricingList = priceFilter.CustomerPricing != null
-                ? priceFilter.CustomerPricing.Where(x => x != null).ToList()
-                : Enumerable.Empty<CustomerPricing>().ToList();
-
-            var entryContentsList = entryContents.Where(x => x != null).ToList();
-
-            var catalogKeys = entryContentsList.Select(GetCatalogKey);
-            IEnumerable<IPriceValue> priceCollection;
-            if (marketId == MarketId.Empty && (!customerPricingList.Any() ||
-                                               customerPricingList.Any(x => string.IsNullOrEmpty(x.PriceCode))))
-            {
-                priceCollection = PriceService.Value.GetCatalogEntryPrices(catalogKeys);
-            }
-            else
-            {
-                var customerPricingsWithPriceCode =
-                    customerPricingList.Where(x => !string.IsNullOrEmpty(x.PriceCode)).ToList();
-                if (customerPricingsWithPriceCode.Any())
-                {
-                    priceFilter.CustomerPricing = customerPricingsWithPriceCode;
-                }
-
-                priceCollection = PriceService.Value.GetPrices(marketId, DateTime.UtcNow, catalogKeys, priceFilter);
-
-                // if the entry has no price without sale code
-                if (!priceCollection.Any())
-                {
-                    priceCollection = PriceService.Value.GetCatalogEntryPrices(catalogKeys)
-                       .Where(x => x.ValidFrom <= DateTime.Now && (!x.ValidUntil.HasValue || x.ValidUntil.Value >= DateTime.Now))
-                       .Where(x => x.MarketId == marketId);
-                }
-            }
-
-            return priceCollection.Select(x => new Price(x));
-        }
-
-        public static string GetCode(this ContentReference contentLink) => ReferenceConverter.Value.GetCode(contentLink);
-
-        public static EntryContentBase GetEntryContent(this CatalogKey catalogKey)
-        {
-            var entryContentLink = ReferenceConverter.Value
-                .GetContentLink(catalogKey.CatalogEntryCode, CatalogContentType.CatalogEntry);
-
-            return ContentLoader.Value.Get<EntryContentBase>(entryContentLink);
-        }
-
-        public static IEnumerable<VariationContent> GetAllVariants(this ContentReference contentLink)
-        {
-            return GetAllVariants<VariationContent>(contentLink);
-        }
-
-        public static IEnumerable<T> GetAllVariants<T>(this ContentReference contentLink) where T : VariationContent
-        {
-            switch (ReferenceConverter.Value.GetContentType(contentLink))
-            {
-                case CatalogContentType.CatalogNode:
-                    var entries = ContentLoader.Value.GetChildren<T>(contentLink,
-                        new LoaderOptions { LanguageLoaderOption.FallbackWithMaster() });
-
-                    foreach (var productContent in entries.OfType<ProductContent>())
-                    {
-                        entries = entries.Union(productContent.GetVariants()
-                            .Select(c => ContentLoader.Value.Get<T>(c)));
-                    }
-
-                    return entries;
-                case CatalogContentType.CatalogEntry:
-                    var entryContent = ContentLoader.Value.Get<EntryContentBase>(contentLink);
-
-                    if (entryContent is ProductContent p)
-                    {
-                        return p.GetVariants().Select(c => ContentLoader.Value.Get<T>(c));
-                    }
-
-                    if (entryContent is T)
-                    {
-                        return new List<T> { entryContent as T };
-                    }
-
-                    break;
-            }
-
-            return Enumerable.Empty<T>();
-        }
-
-        private static string GetOutlineForNode(string nodeCode)
-        {
-            if (string.IsNullOrEmpty(nodeCode))
-            {
-                return "";
-            }
-
-            var outline = nodeCode;
-            var currentNode = ContentLoader.Value.Get<NodeContent>(ReferenceConverter.Value.GetContentLink(nodeCode));
-            var parent = ContentLoader.Value.Get<CatalogContentBase>(currentNode.ParentLink);
-            while (!ContentReference.IsNullOrEmpty(parent.ParentLink))
-            {
-                if (parent is CatalogContent catalog)
-                {
-                    outline = string.Format("{1}/{0}", outline, catalog.Name);
-                }
-
-                if (parent is NodeContent parentNode)
-                {
-                    outline = string.Format("{1}/{0}", outline, parentNode.Code);
-                }
-
-                parent = ContentLoader.Value.Get<CatalogContentBase>(parent.ParentLink);
-            }
-
-            return outline;
-        }
-
-        public static string GetUrl(this EntryContentBase entry) => GetUrl(entry, RelationRepository.Value, UrlResolver.Value);
-
-        public static string GetUrl(this EntryContentBase entry, IRelationRepository linksRepository, UrlResolver urlResolver)
-        {
-            var productLink = entry is VariationContent
-                ? entry.GetParentProducts(linksRepository).FirstOrDefault()
-                : entry.ContentLink;
-
-            if (productLink == null)
-            {
-                return string.Empty;
-            }
-
-            var urlBuilder = new UrlBuilder(urlResolver.GetUrl(productLink));
-
-            if (entry.Code != null && entry is VariationContent)
-            {
-                urlBuilder.QueryCollection.Add("variationCode", entry.Code);
-            }
-
-            return urlBuilder.ToString();
-        }
-
-        public static void AddBrowseHistory(this EntryContentBase entry)
-        {
-            var history = CookieService.Value.Get("BrowseHistory");
-            var values = string.IsNullOrEmpty(history) ? new List<string>() :
-                history.Split(new[] { Delimiter }, StringSplitOptions.RemoveEmptyEntries).ToList();
-
-            if (values.Contains(entry.Code))
-            {
-                return;
-            }
-
-            if (values.Any())
-            {
-                if (values.Count == MaxHistory)
-                {
-                    values.RemoveAt(0);
-                }
-            }
-
-            values.Add(entry.Code);
-
-            CookieService.Value.Set("BrowseHistory", string.Join(Delimiter, values));
-        }
-
-        public static IList<EntryContentBase> GetBrowseHistory()
-        {
-            var entryCodes = CookieService.Value.Get("BrowseHistory");
-            if (string.IsNullOrEmpty(entryCodes))
-            {
-                return new List<EntryContentBase>();
-            }
-
-            var contentLinks = ReferenceConverter.Value.GetContentLinks(entryCodes.Split(new[]
-            {
-                Delimiter
-            }, StringSplitOptions.RemoveEmptyEntries));
-
-            return ContentLoader.Value.GetItems(contentLinks.Select(x => x.Value), new LoaderOptions())
-                .OfType<EntryContentBase>()
-                .ToList();
-        }
+        return _contentLoader.Value.GetItems(contentLinks.Select(x => x.Value), [])
+            .OfType<EntryContentBase>()
+            .ToList();
     }
 }

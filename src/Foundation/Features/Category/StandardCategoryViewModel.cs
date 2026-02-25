@@ -1,13 +1,12 @@
-﻿namespace Foundation.Features.Category
-{
-    public class StandardCategoryViewModel : ContentViewModel<StandardCategory>
-    {
-        public StandardCategoryViewModel()
-        {
-        }
+﻿namespace Foundation.Features.Category;
 
-        public StandardCategoryViewModel(StandardCategory category) : base(category)
-        {
-        }
+public class StandardCategoryViewModel : ContentViewModel<StandardCategory>
+{
+    public StandardCategoryViewModel()
+    {
+    }
+
+    public StandardCategoryViewModel(StandardCategory category) : base(category)
+    {
     }
 }

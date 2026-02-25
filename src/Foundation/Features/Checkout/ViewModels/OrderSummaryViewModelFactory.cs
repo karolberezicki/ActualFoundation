@@ -1,61 +1,60 @@
-﻿namespace Foundation.Features.Checkout.ViewModels
+﻿namespace Foundation.Features.Checkout.ViewModels;
+
+public class OrderSummaryViewModelFactory
 {
-    public class OrderSummaryViewModelFactory
+    private readonly IOrderGroupCalculator _orderGroupCalculator;
+    private readonly ICurrencyService _currencyService;
+
+    public OrderSummaryViewModelFactory(
+        IOrderGroupCalculator orderGroupCalculator,
+        ICurrencyService currencyService)
     {
-        private readonly IOrderGroupCalculator _orderGroupCalculator;
-        private readonly ICurrencyService _currencyService;
+        _orderGroupCalculator = orderGroupCalculator;
+        _currencyService = currencyService;
+    }
 
-        public OrderSummaryViewModelFactory(
-            IOrderGroupCalculator orderGroupCalculator,
-            ICurrencyService currencyService)
+    public virtual OrderSummaryViewModel CreateOrderSummaryViewModel(ICart cart)
+    {
+        if (cart == null)
         {
-            _orderGroupCalculator = orderGroupCalculator;
-            _currencyService = currencyService;
+            return CreateEmptyOrderSummaryViewModel();
         }
 
-        public virtual OrderSummaryViewModel CreateOrderSummaryViewModel(ICart cart)
+        var totals = _orderGroupCalculator.GetOrderGroupTotals(cart);
+
+        return new OrderSummaryViewModel
         {
-            if (cart == null)
+            SubTotal = totals.SubTotal,
+            CartTotal = totals.Total,
+            ShippingTotal = totals.ShippingTotal,
+            ShippingSubtotal = _orderGroupCalculator.GetShippingSubTotal(cart),
+            OrderDiscountTotal = _orderGroupCalculator.GetOrderDiscountTotal(cart),
+            ShippingDiscountTotal = cart.GetShippingDiscountTotal(),
+            ShippingTaxTotal = totals.ShippingTotal + totals.TaxTotal,
+            TaxTotal = totals.TaxTotal,
+            PaymentTotal = cart.Currency.Round(totals.Total.Amount - (cart.GetFirstForm().Payments?.Sum(x => x.Amount) ?? 0)),
+            OrderDiscounts = cart.GetFirstForm().Promotions.Where(x => x.DiscountType == DiscountType.Order).Select(x => new OrderDiscountViewModel
             {
-                return CreateEmptyOrderSummaryViewModel();
-            }
+                Discount = new Money(x.SavedAmount, new Currency(cart.Currency)),
+                DisplayName = x.Description
+            })
+        };
+    }
 
-            var totals = _orderGroupCalculator.GetOrderGroupTotals(cart);
-
-            return new OrderSummaryViewModel
-            {
-                SubTotal = totals.SubTotal,
-                CartTotal = totals.Total,
-                ShippingTotal = totals.ShippingTotal,
-                ShippingSubtotal = _orderGroupCalculator.GetShippingSubTotal(cart),
-                OrderDiscountTotal = _orderGroupCalculator.GetOrderDiscountTotal(cart),
-                ShippingDiscountTotal = cart.GetShippingDiscountTotal(),
-                ShippingTaxTotal = totals.ShippingTotal + totals.TaxTotal,
-                TaxTotal = totals.TaxTotal,
-                PaymentTotal = cart.Currency.Round(totals.Total.Amount - (cart.GetFirstForm().Payments?.Sum(x => x.Amount) ?? 0)),
-                OrderDiscounts = cart.GetFirstForm().Promotions.Where(x => x.DiscountType == DiscountType.Order).Select(x => new OrderDiscountViewModel
-                {
-                    Discount = new Money(x.SavedAmount, new Currency(cart.Currency)),
-                    DisplayName = x.Description
-                })
-            };
-        }
-
-        private OrderSummaryViewModel CreateEmptyOrderSummaryViewModel()
+    private OrderSummaryViewModel CreateEmptyOrderSummaryViewModel()
+    {
+        var zeroAmount = new Money(0, _currencyService.GetCurrentCurrency());
+        return new OrderSummaryViewModel
         {
-            var zeroAmount = new Money(0, _currencyService.GetCurrentCurrency());
-            return new OrderSummaryViewModel
-            {
-                CartTotal = zeroAmount,
-                OrderDiscountTotal = zeroAmount,
-                ShippingDiscountTotal = zeroAmount,
-                ShippingSubtotal = zeroAmount,
-                ShippingTaxTotal = zeroAmount,
-                ShippingTotal = zeroAmount,
-                SubTotal = zeroAmount,
-                TaxTotal = zeroAmount,
-                OrderDiscounts = Enumerable.Empty<OrderDiscountViewModel>(),
-            };
-        }
+            CartTotal = zeroAmount,
+            OrderDiscountTotal = zeroAmount,
+            ShippingDiscountTotal = zeroAmount,
+            ShippingSubtotal = zeroAmount,
+            ShippingTaxTotal = zeroAmount,
+            ShippingTotal = zeroAmount,
+            SubTotal = zeroAmount,
+            TaxTotal = zeroAmount,
+            OrderDiscounts = Enumerable.Empty<OrderDiscountViewModel>(),
+        };
     }
 }

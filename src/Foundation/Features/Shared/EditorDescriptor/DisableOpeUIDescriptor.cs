@@ -1,24 +1,21 @@
 ﻿using EPiServer.Shell;
 
-namespace Foundation.Features.Shared.EditorDescriptors
-{
-    public interface IDisableOPE
-    {
-    }
+namespace Foundation.Features.Shared.EditorDescriptors;
 
-    [UIDescriptorRegistration]
-    public class DisableOpeUIDescriptor : UIDescriptor<IDisableOPE>
+public interface IDisableOPE;
+
+[UIDescriptorRegistration]
+public class DisableOpeUIDescriptor : UIDescriptor<IDisableOPE>
+{
+    public DisableOpeUIDescriptor()
     {
-        public DisableOpeUIDescriptor()
+        DefaultView = CmsViewNames.AllPropertiesView;
+        if (DisabledViews == null)
         {
-            DefaultView = CmsViewNames.AllPropertiesView;
-            if (DisabledViews == null)
-            {
-                DisabledViews = new List<string>();
-            }
-            DisabledViews.Add(CmsViewNames.OnPageEditView);
-            DisabledViews.Add(CmsViewNames.PreviewView);
-            DisabledViews.Add(CmsViewNames.SideBySideCompareView);
+            DisabledViews = new List<string>();
         }
+        DisabledViews.Add(CmsViewNames.OnPageEditView);
+        DisabledViews.Add(CmsViewNames.PreviewView);
+        DisabledViews.Add(CmsViewNames.SideBySideCompareView);
     }
 }

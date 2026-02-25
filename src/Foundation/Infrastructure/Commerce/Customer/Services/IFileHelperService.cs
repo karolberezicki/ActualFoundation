@@ -1,9 +1,8 @@
 ﻿using System.IO;
 
-namespace Foundation.Infrastructure.Commerce.Customer.Services
+namespace Foundation.Infrastructure.Commerce.Customer.Services;
+
+public interface IFileHelperService
 {
-    public interface IFileHelperService
-    {
-        T[] GetImportData<T>(Stream file) where T : class;
-    }
+    T[] GetImportData<T>(Stream file) where T : class;
 }

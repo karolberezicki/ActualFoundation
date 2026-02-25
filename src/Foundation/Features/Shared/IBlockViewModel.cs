@@ -1,7 +1,6 @@
-﻿namespace Foundation.Features.Shared
+﻿namespace Foundation.Features.Shared;
+
+public interface IBlockViewModel<out T> where T : BlockData
 {
-    public interface IBlockViewModel<out T> where T : BlockData
-    {
-        T CurrentBlock { get; }
-    }
+    T CurrentBlock { get; }
 }

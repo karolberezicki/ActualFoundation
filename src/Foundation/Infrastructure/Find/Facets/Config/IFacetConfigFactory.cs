@@ -1,9 +1,8 @@
-﻿namespace Foundation.Infrastructure.Find.Facets.Config
+﻿namespace Foundation.Infrastructure.Find.Facets.Config;
+
+public interface IFacetConfigFactory
 {
-    public interface IFacetConfigFactory
-    {
-        List<FacetDefinition> GetDefaultFacetDefinitions();
-        List<FacetFilterConfigurationItem> GetFacetFilterConfigurationItems();
-        FacetDefinition GetFacetDefinition(FacetFilterConfigurationItem facetConfiguration);
-    }
+    List<FacetDefinition> GetDefaultFacetDefinitions();
+    List<FacetFilterConfigurationItem> GetFacetFilterConfigurationItems();
+    FacetDefinition GetFacetDefinition(FacetFilterConfigurationItem facetConfiguration);
 }

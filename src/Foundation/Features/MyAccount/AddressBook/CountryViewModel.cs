@@ -1,8 +1,7 @@
-namespace Foundation.Features.MyAccount.AddressBook
+namespace Foundation.Features.MyAccount.AddressBook;
+
+public class CountryViewModel
 {
-    public class CountryViewModel
-    {
-        public string Name { get; set; }
-        public string Code { get; set; }
-    }
+    public string Name { get; set; }
+    public string Code { get; set; }
 }

@@ -1,16 +1,15 @@
 using Foundation.Features.Checkout.ViewModels;
 using Foundation.Features.NamedCarts.Wishlist;
 
-namespace Foundation.Features.Header
+namespace Foundation.Features.Header;
+
+public class WishListMiniCartViewModel : CartViewModelBase<WishListPage>
 {
-    public class WishListMiniCartViewModel : CartViewModelBase<WishListPage>
+    public WishListMiniCartViewModel(WishListPage wishListPage) : base(wishListPage)
     {
-        public WishListMiniCartViewModel(WishListPage wishListPage) : base(wishListPage)
-        {
-        }
-
-        public ContentReference WishListPage { get; set; }
-
-        public string Label { get; set; }
     }
+
+    public ContentReference WishListPage { get; set; }
+
+    public string Label { get; set; }
 }

@@ -1,9 +1,8 @@
-﻿namespace Foundation.Features.Search
+﻿namespace Foundation.Features.Search;
+
+public enum ProductSortOrder
 {
-    public enum ProductSortOrder
-    {
-        Popularity,
-        PriceAsc,
-        NewestFirst
-    }
+    Popularity,
+    PriceAsc,
+    NewestFirst
 }

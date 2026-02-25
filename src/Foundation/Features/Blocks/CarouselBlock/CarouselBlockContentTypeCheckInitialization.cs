@@ -2,53 +2,52 @@
 using EPiServer.Framework.Initialization;
 using Foundation.Features.Media;
 
-namespace Foundation.Features.Blocks.CarouselBlock
+namespace Foundation.Features.Blocks.CarouselBlock;
+
+[InitializableModule]
+[ModuleDependency(typeof(EPiServer.Web.InitializationModule))]
+public class CarouselBlockContentTypeCheckInitialization : IInitializableModule
 {
-    [InitializableModule]
-    [ModuleDependency(typeof(EPiServer.Web.InitializationModule))]
-    public class CarouselBlockContentTypeCheckInitialization : IInitializableModule
+    private IContentEvents _contentEvents = null;
+    private IContentLoader _contentLoader = null;
+
+    public void Initialize(InitializationEngine initializationEngine)
     {
-        private IContentEvents _contentEvents = null;
-        private IContentLoader _contentLoader = null;
+        ServiceProviderHelper serviceLocationHelper = initializationEngine.Locate;
+        _contentEvents = initializationEngine.Locate.Advanced.GetInstance<IContentEvents>();
+        _contentLoader = serviceLocationHelper.ContentLoader();
+        _contentEvents.PublishingContent += Events_PublishingContent;
+    }
 
-        public void Initialize(InitializationEngine initializationEngine)
-        {
-            ServiceProviderHelper serviceLocationHelper = initializationEngine.Locate;
-            _contentEvents = initializationEngine.Locate.Advanced.GetInstance<IContentEvents>();
-            _contentLoader = serviceLocationHelper.ContentLoader();
-            _contentEvents.PublishingContent += Events_PublishingContent;
-        }
+    public void Uninitialize(InitializationEngine initializationEngine)
+    {
+        _contentEvents.PublishingContent -= Events_PublishingContent;
+    }
 
-        public void Uninitialize(InitializationEngine initializationEngine)
+    private void Events_PublishingContent(object sender, ContentEventArgs e)
+    {
+        if (e?.Content is CarouselBlock carouselBlock)
         {
-            _contentEvents.PublishingContent -= Events_PublishingContent;
-        }
+            bool cancelPublish = false;
+            string cancelReason = "";
 
-        private void Events_PublishingContent(object sender, ContentEventArgs e)
-        {
-            if (e?.Content is CarouselBlock carouselBlock)
+            var model = new CarouselBlockViewModel(carouselBlock);
+            if (carouselBlock.CarouselItems != null)
             {
-                bool cancelPublish = false;
-                string cancelReason = "";
-
-                var model = new CarouselBlockViewModel(carouselBlock);
-                if (carouselBlock.CarouselItems != null)
+                foreach (var contentAreaItem in carouselBlock.CarouselItems.FilteredItems)
                 {
-                    foreach (var contentAreaItem in carouselBlock.CarouselItems.FilteredItems)
+                    var carouselItem = _contentLoader.Get<IContentData>(contentAreaItem.ContentLink);
+                    if (carouselItem is not ImageMediaData && carouselItem is not ImageData && carouselItem is not HeroBlock.HeroBlock && carouselItem is not ContainerBlock.ContainerBlock)
                     {
-                        var carouselItem = _contentLoader.Get<IContentData>(contentAreaItem.ContentLink);
-                        if (carouselItem is not ImageMediaData && carouselItem is not ImageData && carouselItem is not HeroBlock.HeroBlock && carouselItem is not ContainerBlock.ContainerBlock)
-                        {
-                            cancelPublish = true;
-                            cancelReason = " Carousel Block only allows images, Hero blocks and Containers. Please remove other asset types.";
-                        }
+                        cancelPublish = true;
+                        cancelReason = " Carousel Block only allows images, Hero blocks and Containers. Please remove other asset types.";
                     }
                 }
-                if (cancelPublish)
-                {
-                    e.CancelAction = true;
-                    e.CancelReason = cancelReason;
-                }
+            }
+            if (cancelPublish)
+            {
+                e.CancelAction = true;
+                e.CancelReason = cancelReason;
             }
         }
     }

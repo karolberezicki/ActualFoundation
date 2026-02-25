@@ -1,23 +1,22 @@
-﻿namespace Foundation.Infrastructure.Helpers
+﻿namespace Foundation.Infrastructure.Helpers;
+
+public static class WebPHelper
 {
-    public static class WebPHelper
+    /// <summary>
+    /// Does the requesting browser support WebP
+    /// </summary>
+    /// <param name="httpRequest"></param>
+    /// <returns></returns>
+    public static bool SupportsWebP(HttpRequest httpRequest)
     {
-        /// <summary>
-        /// Does the requesting browser support WebP
-        /// </summary>
-        /// <param name="httpRequest"></param>
-        /// <returns></returns>
-        public static bool SupportsWebP(HttpRequest httpRequest)
+        try
         {
-            try
-            {
-                var acceptHeader = httpRequest.Headers["ACCEPT"];
-                return acceptHeader.Contains("image/webp");
-            }
-            catch
-            {
-                return false;
-            }
+            var acceptHeader = httpRequest.Headers["ACCEPT"];
+            return acceptHeader.Contains("image/webp");
+        }
+        catch
+        {
+            return false;
         }
     }
 }

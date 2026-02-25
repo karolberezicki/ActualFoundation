@@ -1,20 +1,19 @@
 using EPiServer.Shell;
 
-namespace Foundation.Features.Blocks.ProductFilterBlocks
+namespace Foundation.Features.Blocks.ProductFilterBlocks;
+
+[UIDescriptorRegistration]
+public class FilterUIDescriptor : UIDescriptor<FilterBaseBlock>
 {
-    [UIDescriptorRegistration]
-    public class FilterUIDescriptor : UIDescriptor<FilterBaseBlock>
+    public FilterUIDescriptor()
     {
-        public FilterUIDescriptor()
+        DefaultView = CmsViewNames.AllPropertiesView;
+        if (DisabledViews == null)
         {
-            DefaultView = CmsViewNames.AllPropertiesView;
-            if (DisabledViews == null)
-            {
-                DisabledViews = new List<string>();
-            }
-            DisabledViews.Add(CmsViewNames.OnPageEditView);
-            DisabledViews.Add(CmsViewNames.PreviewView);
-            DisabledViews.Add(CmsViewNames.SideBySideCompareView);
+            DisabledViews = new List<string>();
         }
+        DisabledViews.Add(CmsViewNames.OnPageEditView);
+        DisabledViews.Add(CmsViewNames.PreviewView);
+        DisabledViews.Add(CmsViewNames.SideBySideCompareView);
     }
 }

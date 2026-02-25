@@ -1,31 +1,31 @@
 ﻿using Foundation.Features.Search;
 using Foundation.Infrastructure.Cms.Settings;
 
-namespace Foundation.Features.Sales
+namespace Foundation.Features.Sales;
+
+public class SalesPageController : PageController<SalesPage>
 {
-    public class SalesPageController : PageController<SalesPage>
+    private readonly ISearchService _searchService;
+    private readonly ISettingsService _settingsService;
+
+    public SalesPageController(ISearchService searchService,
+        ISettingsService settingsService)
     {
-        private readonly ISearchService _searchService;
-        private readonly ISettingsService _settingsService;
+        _searchService = searchService;
+        _settingsService = settingsService;
+    }
 
-        public SalesPageController(ISearchService searchService,
-            ISettingsService settingsService)
+    public async Task<ActionResult> Index(SalesPage currentPage, int page = 1)
+    {
+        var searchSettings = _settingsService.GetSiteSettings<SearchSettings>();
+        var result = await _searchService.SearchOnSaleAsync(currentPage, searchSettings?.SearchCatalog ?? 0, page, 12);
+        var model = new SalesPageViewModel(currentPage)
         {
-            _searchService = searchService;
-            _settingsService = settingsService;
-        }
+            ProductViewModels = result.Products,
+            PageNumber = page,
+            Pages = result.Pages
+        };
 
-        public ActionResult Index(SalesPage currentPage, int page = 1)
-        {
-            var searchSettings = _settingsService.GetSiteSettings<SearchSettings>();
-            var model = new SalesPageViewModel(currentPage)
-            {
-                ProductViewModels = _searchService.SearchOnSale(currentPage, out var pages, searchSettings?.SearchCatalog ?? 0, page, 12),
-                PageNumber = page,
-                Pages = pages
-            };
-
-            return View(model);
-        }
+        return View(model);
     }
 }

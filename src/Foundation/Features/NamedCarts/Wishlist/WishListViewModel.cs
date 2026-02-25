@@ -1,11 +1,10 @@
 using Foundation.Features.NamedCarts.Wishlist;
 
-namespace Foundation.Features.Checkout.ViewModels
+namespace Foundation.Features.Checkout.ViewModels;
+
+public class WishListViewModel : CartViewModelBase<WishListPage>
 {
-    public class WishListViewModel : CartViewModelBase<WishListPage>
+    public WishListViewModel(WishListPage wishListPage) : base(wishListPage)
     {
-        public WishListViewModel(WishListPage wishListPage) : base(wishListPage)
-        {
-        }
     }
 }

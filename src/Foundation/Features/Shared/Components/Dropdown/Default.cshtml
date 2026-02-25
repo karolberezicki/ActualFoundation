@@ -1,15 +1,4 @@
 ﻿@model Foundation.Features.Shared.Components.Dropdown.DropdownModel
-@{
-    var isExistValue = false;
-    foreach (var item in Model.List)
-    {
-        if (item.Value == Model.SelectedValue)
-        {
-            isExistValue = true;
-            break;
-        }
-    }
-}
 
 <select name="@Model.Name"
         class="select-menu @Model.SelectorClassItem" @(Model.IsDisabled ? "disabled" : "")

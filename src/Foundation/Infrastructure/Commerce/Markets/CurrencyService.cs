@@ -1,57 +1,56 @@
 ﻿using Foundation.Infrastructure.Cms;
 
-namespace Foundation.Infrastructure.Commerce.Markets
+namespace Foundation.Infrastructure.Commerce.Markets;
+
+public class CurrencyService : ICurrencyService
 {
-    public class CurrencyService : ICurrencyService
+    private const string CurrencyCookie = "Currency";
+    private readonly ICookieService _cookieService;
+    private readonly ICurrentMarket _currentMarket;
+
+    public CurrencyService(ICurrentMarket currentMarket, ICookieService cookieService)
     {
-        private const string CurrencyCookie = "Currency";
-        private readonly ICookieService _cookieService;
-        private readonly ICurrentMarket _currentMarket;
+        _currentMarket = currentMarket;
+        _cookieService = cookieService;
+    }
 
-        public CurrencyService(ICurrentMarket currentMarket, ICookieService cookieService)
+    private IMarket CurrentMarket => _currentMarket.GetCurrentMarket();
+
+    public IEnumerable<Currency> GetAvailableCurrencies() => CurrentMarket.Currencies;
+
+    public virtual Currency GetCurrentCurrency()
+    {
+        return TryGetCurrency(_cookieService.Get(CurrencyCookie), out var currency)
+            ? currency
+            : CurrentMarket.DefaultCurrency;
+    }
+
+    public bool SetCurrentCurrency(string currencyCode)
+    {
+        if (!TryGetCurrency(currencyCode, out _))
         {
-            _currentMarket = currentMarket;
-            _cookieService = cookieService;
+            return false;
         }
 
-        private IMarket CurrentMarket => _currentMarket.GetCurrentMarket();
+        _cookieService.Set(CurrencyCookie, currencyCode);
 
-        public IEnumerable<Currency> GetAvailableCurrencies() => CurrentMarket.Currencies;
+        return true;
+    }
 
-        public virtual Currency GetCurrentCurrency()
+    private bool TryGetCurrency(string currencyCode, out Currency currency)
+    {
+        var result = GetAvailableCurrencies()
+            .Where(x => x.CurrencyCode == currencyCode)
+            .Cast<Currency?>()
+            .FirstOrDefault();
+
+        if (result.HasValue)
         {
-            return TryGetCurrency(_cookieService.Get(CurrencyCookie), out var currency)
-                ? currency
-                : CurrentMarket.DefaultCurrency;
-        }
-
-        public bool SetCurrentCurrency(string currencyCode)
-        {
-            if (!TryGetCurrency(currencyCode, out _))
-            {
-                return false;
-            }
-
-            _cookieService.Set(CurrencyCookie, currencyCode);
-
+            currency = result.Value;
             return true;
         }
 
-        private bool TryGetCurrency(string currencyCode, out Currency currency)
-        {
-            var result = GetAvailableCurrencies()
-                .Where(x => x.CurrencyCode == currencyCode)
-                .Cast<Currency?>()
-                .FirstOrDefault();
-
-            if (result.HasValue)
-            {
-                currency = result.Value;
-                return true;
-            }
-
-            currency = null;
-            return false;
-        }
+        currency = null;
+        return false;
     }
 }

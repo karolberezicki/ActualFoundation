@@ -1,10 +1,9 @@
-﻿namespace Foundation.Features.Blocks.ModalBlock
+﻿namespace Foundation.Features.Blocks.ModalBlock;
+
+public class ModalBlockComponent : AsyncBlockComponent<ModalBlock>
 {
-    public class ModalBlockComponent : AsyncBlockComponent<ModalBlock>
+    protected override async Task<IViewComponentResult> InvokeComponentAsync(ModalBlock currentBlock)
     {
-        protected override async Task<IViewComponentResult> InvokeComponentAsync(ModalBlock currentBlock)
-        {
-            return await Task.FromResult(View("~/Features/Blocks/ModalBlock/ModalBlock.cshtml", currentBlock));
-        }
+        return await Task.FromResult(View("~/Features/Blocks/ModalBlock/ModalBlock.cshtml", currentBlock));
     }
 }

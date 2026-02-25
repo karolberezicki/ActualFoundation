@@ -2,30 +2,29 @@
 using Foundation.Features.CatalogContent;
 using Foundation.Features.CatalogContent.Services;
 
-namespace Foundation.Features.Recommendations
+namespace Foundation.Features.Recommendations;
+
+public class RecommendationsViewComponent : ViewComponent
 {
-    public class RecommendationsViewComponent : ViewComponent
+    private readonly IProductService _recommendationService;
+
+    public RecommendationsViewComponent(IProductService recommendationService)
     {
-        private readonly IProductService _recommendationService;
+        _recommendationService = recommendationService;
+    }
 
-        public RecommendationsViewComponent(IProductService recommendationService)
+    public IViewComponentResult Invoke(IEnumerable<Recommendation> recommendations)
+    {
+        if (recommendations == null || !recommendations.Any())
         {
-            _recommendationService = recommendationService;
+            return View("/Features/Recommendations/Index.cshtml", new List<RecommendedProductTileViewModel>()); ;
         }
 
-        public IViewComponentResult Invoke(IEnumerable<Recommendation> recommendations)
+        if (recommendations.Count() > 4)
         {
-            if (recommendations == null || !recommendations.Any())
-            {
-                return View("/Features/Recommendations/Index.cshtml", new List<RecommendedProductTileViewModel>()); ;
-            }
-
-            if (recommendations.Count() > 4)
-            {
-                recommendations = recommendations.Take(4);
-            }
-
-            return View("/Features/Recommendations/Index.cshtml", _recommendationService.GetRecommendedProductTileViewModels(recommendations));
+            recommendations = recommendations.Take(4);
         }
+
+        return View("/Features/Recommendations/Index.cshtml", _recommendationService.GetRecommendedProductTileViewModels(recommendations));
     }
 }

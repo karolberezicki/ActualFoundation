@@ -1,15 +1,14 @@
 ﻿using Foundation.Features.CatalogContent;
 
-namespace Foundation.Features.Sales
+namespace Foundation.Features.Sales;
+
+public class SalesPageViewModel : ContentViewModel<SalesPage>
 {
-    public class SalesPageViewModel : ContentViewModel<SalesPage>
-    {
-        public IEnumerable<ProductTileViewModel> ProductViewModels { get; set; }
+    public IEnumerable<ProductTileViewModel> ProductViewModels { get; set; }
 
-        public int PageNumber { get; set; } = 1;
+    public int PageNumber { get; set; } = 1;
 
-        public List<int> Pages { get; set; }
+    public List<int> Pages { get; set; }
 
-        public SalesPageViewModel(SalesPage currentPage) : base(currentPage) { }
-    }
+    public SalesPageViewModel(SalesPage currentPage) : base(currentPage) { }
 }

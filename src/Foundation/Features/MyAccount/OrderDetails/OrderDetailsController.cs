@@ -6,187 +6,186 @@ using Foundation.Infrastructure.Commerce.Customer.Services;
 using Mediachase.Commerce.Orders;
 using System.Text;
 
-namespace Foundation.Features.MyAccount.OrderDetails
+namespace Foundation.Features.MyAccount.OrderDetails;
+
+public class OrderDetailsController : PageController<OrderDetailsPage>
 {
-    public class OrderDetailsController : PageController<OrderDetailsPage>
+    private readonly IAddressBookService _addressBookService;
+    private readonly IOrdersService _ordersService;
+    private readonly ICustomerService _customerService;
+    private readonly IOrderRepository _orderRepository;
+    private readonly IContentLoader _contentLoader;
+    private readonly ICartService _cartService;
+    private readonly IPurchaseOrderFactory _purchaseOrderFactory;
+
+    public OrderDetailsController(IAddressBookService addressBookService, IOrdersService ordersService, ICustomerService customerService, IOrderRepository orderRepository, IContentLoader contentLoader, ICartService cartService, IPurchaseOrderFactory purchaseOrderFactory)
     {
-        private readonly IAddressBookService _addressBookService;
-        private readonly IOrdersService _ordersService;
-        private readonly ICustomerService _customerService;
-        private readonly IOrderRepository _orderRepository;
-        private readonly IContentLoader _contentLoader;
-        private readonly ICartService _cartService;
-        private readonly IPurchaseOrderFactory _purchaseOrderFactory;
+        _addressBookService = addressBookService;
+        _ordersService = ordersService;
+        _customerService = customerService;
+        _orderRepository = orderRepository;
+        _contentLoader = contentLoader;
+        _cartService = cartService;
+        _purchaseOrderFactory = purchaseOrderFactory;
+    }
 
-        public OrderDetailsController(IAddressBookService addressBookService, IOrdersService ordersService, ICustomerService customerService, IOrderRepository orderRepository, IContentLoader contentLoader, ICartService cartService, IPurchaseOrderFactory purchaseOrderFactory)
+    [HttpGet]
+    public ActionResult Index(OrderDetailsPage currentPage, int orderGroupId = 0) => View(GetModel(orderGroupId, currentPage));
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public ActionResult ApproveOrder(int orderGroupId = 0)
+    {
+        if (orderGroupId == 0)
         {
-            _addressBookService = addressBookService;
-            _ordersService = ordersService;
-            _customerService = customerService;
-            _orderRepository = orderRepository;
-            _contentLoader = contentLoader;
-            _cartService = cartService;
-            _purchaseOrderFactory = purchaseOrderFactory;
+            return Json(new { result = true });
         }
 
-        [HttpGet]
-        public ActionResult Index(OrderDetailsPage currentPage, int orderGroupId = 0) => View(GetModel(orderGroupId, currentPage));
+        var success = _ordersService.ApproveOrder(orderGroupId);
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult ApproveOrder(int orderGroupId = 0)
+        return success ? Json(new { Status = true, Message = "" }) : Json(new { Status = false, Message = "Failed to process your payment." });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public ActionResult CreateReturn(int orderGroupId, int shipmentId, int lineItemId, decimal returnQuantity, string reason)
+    {
+        var formStatus = _ordersService.CreateReturn(orderGroupId, shipmentId, lineItemId, returnQuantity, reason);
+        return Json(new
         {
-            if (orderGroupId == 0)
-            {
-                return Json(new { result = true });
-            }
+            Result = true,
+            ReturnFormStatus = formStatus.ToString()
+        });
+    }
 
-            var success = _ordersService.ApproveOrder(orderGroupId);
+    [HttpPost]
+    public ActionResult ChangePrice(int orderGroupId, int shipmentId, int lineItemId, decimal placedPrice, OrderDetailsPage currentPage)
+    {
+        var issues = _ordersService.ChangeLineItemPrice(orderGroupId, shipmentId, lineItemId, placedPrice);
+        var model = GetModel(orderGroupId, currentPage);
+        model.ErrorMessage = GetValidationMessages(issues);
+        return PartialView("Index", model);
+    }
 
-            return success ? Json(new { Status = true, Message = "" }) : Json(new { Status = false, Message = "Failed to process your payment." });
+    [HttpPost]
+    public ActionResult ChangeQuantity(int orderGroupId, int shipmentId, int lineItemId, decimal quantity, OrderDetailsPage currentPage)
+    {
+        var issues = _ordersService.ChangeLineItemQuantity(orderGroupId, shipmentId, lineItemId, quantity);
+        var model = GetModel(orderGroupId, currentPage);
+        model.ErrorMessage = GetValidationMessages(issues);
+        return PartialView("Index", model);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public ActionResult AddNote(int orderGroupId, string note)
+    {
+        var order = _orderRepository.Load<IPurchaseOrder>(orderGroupId);
+        var orderNote = _ordersService.AddNote(order, "Customer Manual Note", note);
+        _orderRepository.Save(order);
+        return Json(orderNote);
+    }
+
+    private static string GetValidationMessages(Dictionary<ILineItem, List<ValidationIssue>> validationIssues)
+    {
+        var messages = new List<string>();
+        foreach (var validationIssue in validationIssues)
+        {
+            var warning = new StringBuilder();
+            warning.Append($"Line Item with code {validationIssue.Key.Code} ");
+            validationIssue.Value.Aggregate(warning, (current, issue) => current.Append(issue).Append(", "));
+            messages.Add(warning.ToString().TrimEnd(',', ' '));
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult CreateReturn(int orderGroupId, int shipmentId, int lineItemId, decimal returnQuantity, string reason)
+        return string.Join(".", messages);
+    }
+
+    private OrderDetailsViewModel GetModel(int orderGroupId, OrderDetailsPage currentPage)
+    {
+        var orderViewModel = new OrderDetailsViewModel
         {
-            var formStatus = _ordersService.CreateReturn(orderGroupId, shipmentId, lineItemId, returnQuantity, reason);
-            return Json(new
-            {
-                Result = true,
-                ReturnFormStatus = formStatus.ToString()
-            });
+            CurrentContent = currentPage,
+            CurrentCustomer = _customerService.GetCurrentContactViewModel()
+        };
+
+        var purchaseOrder = OrderContext.Current.Get<PurchaseOrder>(orderGroupId);
+        if (purchaseOrder == null)
+        {
+            return orderViewModel;
         }
 
-        [HttpPost]
-        public ActionResult ChangePrice(int orderGroupId, int shipmentId, int lineItemId, decimal placedPrice, OrderDetailsPage currentPage)
+        var currentContact = _customerService.GetCurrentContact();
+        var currentOrganization = currentContact.FoundationOrganization;
+        if (currentOrganization != null)
         {
-            var issues = _ordersService.ChangeLineItemPrice(orderGroupId, shipmentId, lineItemId, placedPrice);
-            var model = GetModel(orderGroupId, currentPage);
-            model.ErrorMessage = GetValidationMessages(issues);
-            return PartialView("Index", model);
-        }
-
-        [HttpPost]
-        public ActionResult ChangeQuantity(int orderGroupId, int shipmentId, int lineItemId, decimal quantity, OrderDetailsPage currentPage)
-        {
-            var issues = _ordersService.ChangeLineItemQuantity(orderGroupId, shipmentId, lineItemId, quantity);
-            var model = GetModel(orderGroupId, currentPage);
-            model.ErrorMessage = GetValidationMessages(issues);
-            return PartialView("Index", model);
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult AddNote(int orderGroupId, string note)
-        {
-            var order = _orderRepository.Load<IPurchaseOrder>(orderGroupId);
-            var orderNote = _ordersService.AddNote(order, "Customer Manual Note", note);
-            _orderRepository.Save(order);
-            return Json(orderNote);
-        }
-
-        private static string GetValidationMessages(Dictionary<ILineItem, List<ValidationIssue>> validationIssues)
-        {
-            var messages = new List<string>();
-            foreach (var validationIssue in validationIssues)
-            {
-                var warning = new StringBuilder();
-                warning.Append($"Line Item with code {validationIssue.Key.Code} ");
-                validationIssue.Value.Aggregate(warning, (current, issue) => current.Append(issue).Append(", "));
-                messages.Add(warning.ToString().TrimEnd(',', ' '));
-            }
-
-            return string.Join(".", messages);
-        }
-
-        private OrderDetailsViewModel GetModel(int orderGroupId, OrderDetailsPage currentPage)
-        {
-            var orderViewModel = new OrderDetailsViewModel
-            {
-                CurrentContent = currentPage,
-                CurrentCustomer = _customerService.GetCurrentContactViewModel()
-            };
-
-            var purchaseOrder = OrderContext.Current.Get<PurchaseOrder>(orderGroupId);
-            if (purchaseOrder == null)
+            var usersOrganization = _customerService.GetContactsForOrganization(currentOrganization);
+            if (!usersOrganization.Where(x => x.ContactId == purchaseOrder.CustomerId).Any())
             {
                 return orderViewModel;
             }
-
-            var currentContact = _customerService.GetCurrentContact();
-            var currentOrganization = currentContact.FoundationOrganization;
-            if (currentOrganization != null)
+        }
+        else
+        {
+            if (currentContact.ContactId != purchaseOrder.CustomerId)
             {
-                var usersOrganization = _customerService.GetContactsForOrganization(currentOrganization);
-                if (!usersOrganization.Where(x => x.ContactId == purchaseOrder.CustomerId).Any())
-                {
-                    return orderViewModel;
-                }
+                return orderViewModel;
             }
-            else
-            {
-                if (currentContact.ContactId != purchaseOrder.CustomerId)
-                {
-                    return orderViewModel;
-                }
-            }
+        }
 
-            // Assume there is only one form per purchase.
-            var form = purchaseOrder.GetFirstForm();
+        // Assume there is only one form per purchase.
+        var form = purchaseOrder.GetFirstForm();
 
-            var billingAddress = form.Payments.FirstOrDefault() != null
-                ? form.Payments.First().BillingAddress
-                : new OrderAddress();
+        var billingAddress = form.Payments.FirstOrDefault() != null
+            ? form.Payments.First().BillingAddress
+            : new OrderAddress();
 
-            orderViewModel.PurchaseOrder = purchaseOrder;
+        orderViewModel.PurchaseOrder = purchaseOrder;
 
-            orderViewModel.Items = form.Shipments.SelectMany(shipment => shipment.LineItems.Select(lineitem => new OrderDetailsItemViewModel
+        orderViewModel.Items = form.Shipments.SelectMany(shipment => shipment.LineItems.Select(lineitem => new OrderDetailsItemViewModel
             {
                 LineItem = lineitem,
                 Shipment = shipment,
                 PurchaseOrder = orderViewModel.PurchaseOrder as PurchaseOrder,
             }
-            ));
+        ));
 
-            orderViewModel.BillingAddress = _addressBookService.ConvertToModel(billingAddress);
-            orderViewModel.ShippingAddresses = new List<AddressModel>();
+        orderViewModel.BillingAddress = _addressBookService.ConvertToModel(billingAddress);
+        orderViewModel.ShippingAddresses = new List<AddressModel>();
 
-            foreach (var orderAddress in form.Shipments.Select(s => s.ShippingAddress))
+        foreach (var orderAddress in form.Shipments.Select(s => s.ShippingAddress))
+        {
+            var shippingAddress = _addressBookService.ConvertToModel(orderAddress);
+            orderViewModel.ShippingAddresses.Add(shippingAddress);
+            orderViewModel.OrderGroupId = purchaseOrder.OrderGroupId;
+        }
+        if (purchaseOrder[Constant.Quote.QuoteExpireDate] != null &&
+            !string.IsNullOrEmpty(purchaseOrder[Constant.Quote.QuoteExpireDate].ToString()))
+        {
+            DateTime.TryParse(purchaseOrder[Constant.Quote.QuoteExpireDate].ToString(), out var quoteExpireDate);
+            if (DateTime.Compare(DateTime.Now, quoteExpireDate) > 0)
             {
-                var shippingAddress = _addressBookService.ConvertToModel(orderAddress);
-                orderViewModel.ShippingAddresses.Add(shippingAddress);
-                orderViewModel.OrderGroupId = purchaseOrder.OrderGroupId;
-            }
-            if (purchaseOrder[Constant.Quote.QuoteExpireDate] != null &&
-                !string.IsNullOrEmpty(purchaseOrder[Constant.Quote.QuoteExpireDate].ToString()))
-            {
-                DateTime.TryParse(purchaseOrder[Constant.Quote.QuoteExpireDate].ToString(), out var quoteExpireDate);
-                if (DateTime.Compare(DateTime.Now, quoteExpireDate) > 0)
+                orderViewModel.QuoteStatus = Constant.Quote.QuoteExpired;
+                try
                 {
-                    orderViewModel.QuoteStatus = Constant.Quote.QuoteExpired;
-                    try
-                    {
-                        // Update order quote status to expired
-                        purchaseOrder[Constant.Quote.QuoteStatus] = Constant.Quote.QuoteExpired;
-                        _orderRepository.Save(purchaseOrder);
-                    }
-                    catch (Exception ex)
-                    {
-                        LogManager.GetLogger(GetType()).Error("Failed to update order status to Quote Expired.", ex.StackTrace);
-                    }
+                    // Update order quote status to expired
+                    purchaseOrder[Constant.Quote.QuoteStatus] = Constant.Quote.QuoteExpired;
+                    _orderRepository.Save(purchaseOrder);
+                }
+                catch (Exception ex)
+                {
+                    LogManager.GetLogger(GetType()).Error("Failed to update order status to Quote Expired.", ex.StackTrace);
                 }
             }
-
-            if (!string.IsNullOrEmpty(purchaseOrder["QuoteStatus"]?.ToString()) &&
-                (purchaseOrder.Status == OrderStatus.InProgress.ToString() ||
-                 purchaseOrder.Status == OrderStatus.OnHold.ToString()))
-            {
-                orderViewModel.QuoteStatus = purchaseOrder["QuoteStatus"].ToString();
-            }
-
-            orderViewModel.BudgetPayment = _ordersService.GetOrderBudgetPayment(purchaseOrder);
-            return orderViewModel;
         }
+
+        if (!string.IsNullOrEmpty(purchaseOrder["QuoteStatus"]?.ToString()) &&
+            (purchaseOrder.Status == OrderStatus.InProgress.ToString() ||
+             purchaseOrder.Status == OrderStatus.OnHold.ToString()))
+        {
+            orderViewModel.QuoteStatus = purchaseOrder["QuoteStatus"].ToString();
+        }
+
+        orderViewModel.BudgetPayment = _ordersService.GetOrderBudgetPayment(purchaseOrder);
+        return orderViewModel;
     }
 }

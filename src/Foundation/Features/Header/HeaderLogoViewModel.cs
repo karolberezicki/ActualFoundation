@@ -1,9 +1,8 @@
-﻿namespace Foundation.Features.Header
+﻿namespace Foundation.Features.Header;
+
+public class HeaderLogoViewModel
 {
-    public class HeaderLogoViewModel
-    {
-        public bool LargeHeaderMenu { get; set; }
-        public string HeaderMenuStyle { get; set; }
-        public ContentReference SiteLogo { get; set; }
-    }
+    public bool LargeHeaderMenu { get; set; }
+    public string HeaderMenuStyle { get; set; }
+    public ContentReference SiteLogo { get; set; }
 }

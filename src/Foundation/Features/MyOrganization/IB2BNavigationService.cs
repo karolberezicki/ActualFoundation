@@ -1,9 +1,8 @@
 ﻿using EPiServer.SpecializedProperties;
 
-namespace Foundation.Features.MyOrganization
+namespace Foundation.Features.MyOrganization;
+
+public interface IB2BNavigationService
 {
-    public interface IB2BNavigationService
-    {
-        LinkItemCollection FilterB2BNavigationForCurrentUser(LinkItemCollection b2BLinks);
-    }
+    LinkItemCollection FilterB2BNavigationForCurrentUser(LinkItemCollection b2BLinks);
 }

@@ -1,4 +1,5 @@
-﻿@using EPiServer.Core.Html
+﻿@using EPiServer.Find.Helpers.Text
+@using Foundation.Infrastructure.Cms.Extensions
 @using Foundation.Features.Blocks.PageListBlock
 @using Foundation.Features.Shared.SelectionFactories
 
@@ -46,7 +47,7 @@
                     @if (page.ShowIntroduction)
                     {
                         <br />
-                        <p class="light-text">@Html.Raw(TextIndexer.StripHtml(foundationPage.TeaserText, 200))</p>
+                        <p class="light-text">@Html.Raw(foundationPage.TeaserText?.StripHtml().Truncate(200))</p>
                     }
                 </div>
                 @if (page.Flip)
@@ -99,7 +100,7 @@
                         @if (page.ShowIntroduction)
                         {
                             <br />
-                            <p class="light-text">@Html.Raw(TextIndexer.StripHtml(foundationPage.TeaserText, 200))</p>
+                            <p class="light-text">@Html.Raw(foundationPage.TeaserText?.StripHtml().Truncate(200))</p>
                         }
                     </div>
 

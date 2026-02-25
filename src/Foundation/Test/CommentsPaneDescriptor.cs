@@ -1,53 +1,52 @@
 ﻿using EPiServer.Shell;
 
-namespace Foundation.Test
+namespace Foundation.Test;
+
+[ServiceConfiguration(typeof(IContentRepositoryDescriptor))]
+public class CommentsPaneDescriptor : ContentRepositoryDescriptorBase
 {
-    [ServiceConfiguration(typeof(IContentRepositoryDescriptor))]
-    public class CommentsPaneDescriptor : ContentRepositoryDescriptorBase
+    public static string RepositoryKey { get { return "commets"; } }
+
+    public override string Key { get { return RepositoryKey; } }
+
+    public override string Name { get { return "Comments"; } }
+
+    public override IEnumerable<Type> ContainedTypes
     {
-        public static string RepositoryKey { get { return "commets"; } }
-
-        public override string Key { get { return RepositoryKey; } }
-
-        public override string Name { get { return "Comments"; } }
-
-        public override IEnumerable<Type> ContainedTypes
+        get
         {
-            get
+            return new[]
             {
-                return new[]
-                {
-                    typeof(ContentFolder),
-                    typeof(Comment)
-                };
-            }
+                typeof(ContentFolder),
+                typeof(Comment)
+            };
         }
+    }
 
-        public override IEnumerable<Type> CreatableTypes
+    public override IEnumerable<Type> CreatableTypes
+    {
+        get
         {
-            get
-            {
-                return new[] { typeof(Comment) };
-            }
+            return new[] { typeof(Comment) };
         }
+    }
 
-        public override IEnumerable<ContentReference> Roots
+    public override IEnumerable<ContentReference> Roots
+    {
+        get
         {
-            get
-            {
-                return Enumerable.Empty<ContentReference>();
-            }
+            return Enumerable.Empty<ContentReference>();
         }
+    }
 
-        public override IEnumerable<Type> MainNavigationTypes
+    public override IEnumerable<Type> MainNavigationTypes
+    {
+        get
         {
-            get
+            return new[]
             {
-                return new[]
-                {
-                    typeof(ContentFolder)
-                };
-            }
+                typeof(ContentFolder)
+            };
         }
     }
 }

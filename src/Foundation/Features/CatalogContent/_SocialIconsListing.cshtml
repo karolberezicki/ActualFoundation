@@ -1,7 +1,7 @@
 ﻿@model string
 
 @{
-    var shareTitle = Uri.EscapeUriString("Check out this product: " + Model);
+    var shareTitle = Uri.EscapeDataString("Check out this product: " + Model);
     var shareUrl = WebUtility.UrlEncode(Context.Request.Path.ToString());
 }
 

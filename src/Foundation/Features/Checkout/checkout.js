@@ -373,19 +373,6 @@ export default class Checkout {
                     }
                     
 
-                    if (quantity > 1) {
-                        let btn = el.closest(".jsCartItem").querySelector('.jsSeparateHint');
-                        btn.parentElement.classList.remove('hidden');
-                        btn.classList.add('jsSeparateBtn');
-                        inst.separateClick(btn);
-                        
-                    }
-                    else {
-                        let btn = el.closest(".jsCartItem").querySelector('.jsSeparateHint');
-                        btn.parentElement.classList.add('hidden');
-                        btn.classList.remove('jsSeparateBtn');
-                    }
-
                     document.querySelector('.jsCouponReplaceHtml').innerHTML = r.data;
                     document.querySelector('.jsOrderSummary').innerHTML = (document.querySelector('.jsOrderSummaryInPayment').innerHTML);
                     cartHelper.setCartReload(document.querySelector('.jsTotalQuantityCheckout').value);
@@ -402,106 +389,6 @@ export default class Checkout {
     });
 }
   
-    separateClick(selector) {
-        
-    if (selector) {
-        selector.addEventListener("click", function () {
-            Array.from(document.querySelectorAll(".jsSelectShipment")).forEach(function (s, i) {
-                s.style.display = "block";
-            });
-            let code = selector.getAttribute("data-code");
-            let shipmentid = selector.getAttribute("data-shipmentid");
-            let qty = selector.closest("jsCartItem").querySelector('.jsChangeQuantityItemCheckout').value;
-            let delivery = selector.getAttribute("data-delivery");
-            let selectedstore = selector.getAttribute("data-selectedstore");
-
-            document.querySelector('#lineItemInfomation').setAttribute("data-code", code);
-            document.querySelector('#lineItemInfomation').setAttribute("data-shipmentid", shipmentid);
-            document.querySelector('#lineItemInfomation').setAttribute("data-qty", qty);
-            document.querySelector('#lineItemInfomation').setAttribute("data-delivery", delivery);
-            document.querySelector('#lineItemInfomation').setAttribute("data-selectedstore", selectedstore);
-            Array.from(document.querySelectorAll(".jsSelectShipment")).forEach(function (e, i) {
-                if (e.getAttribute("data-shipmentid") == shipmentid)
-                    e.style.display = "none";
-            });
-        })
-    } else {
-        if (document.querySelector(".jsSeparateBtn") == null) return;
-        Array.from(document.querySelectorAll(".jsSeparateBtn")).forEach(function (e, i) {
-            e.addEventListener("click", function () {
-
-                if (document.querySelector(".jsSelectShipment") == null) return;
-                Array.from(document.querySelectorAll(".jsSelectShipment")).forEach(function (s, i) {
-                    s.style.display = "block";
-                });
-
-                let code = e.getAttribute("data-code");
-                let shipmentid = e.getAttribute("data-shipmentid");
-                let qty = e.closest('.jsCartItem').querySelector('.jsChangeQuantityItemCheckout').value;
-                let delivery = e.getAttribute("data-delivery");
-                let selectedstore = e.getAttribute("data-selectedstore");
-
-                document.querySelector('#lineItemInfomation').setAttribute("data-code", code);
-                document.querySelector('#lineItemInfomation').setAttribute("data-shipmentid", shipmentid);
-                document.querySelector('#lineItemInfomation').setAttribute("data-qty", qty);
-                document.querySelector('#lineItemInfomation').setAttribute("data-delivery", delivery);
-                document.querySelector('#lineItemInfomation').setAttribute("data-selectedstore", selectedstore);
-                Array.from(document.querySelectorAll(".jsSelectShipment")).forEach(function (j, i) {
-                    if (j.getAttribute("data-shipmentid") == shipmentid)
-                        j.style.display = "none";
-                });
-            });
-        });
-    }
-}
-
-    confirmSeparateItemClick() {
-        
-        if (document.querySelector(".jsSelectShipment") == null) return;
-        Array.from(document.querySelectorAll(".jsSelectShipment")).forEach(function (e, i) {
-        e.addEventListener("click", function () {
-            document.querySelector('.loading-box').style.display = "block";
-
-            let url = document.querySelector('#lineItemInfomation').getAttribute("data-url");
-            let code = document.querySelector('#lineItemInfomation').getAttribute("data-code");
-            let shipmentid = document.querySelector('#lineItemInfomation').getAttribute("data-shipmentid");
-            let qty = document.querySelector('#lineItemInfomation').getAttribute("data-qty");
-            let delivery = document.querySelector('#lineItemInfomation').getAttribute("data-delivery");
-            let selectedstore = document.querySelector('#lineItemInfomation').getAttribute("data-selectedstore");
-            let toShipmentId = e.getAttribute("data-shipmentid");
-
-            let data = {
-                code: code,
-                quantity: qty,
-                toShipmentId: toShipmentId,
-                deliveryMethodId: delivery,
-                selectedStore: selectedstore,
-                shipmentId: shipmentid
-            };
-
-            axios.post(url, data)
-                .then(function (r) {
-                    if (r.data.status == true) {
-                        window.location.href = r.data.redirectUrl;
-                    } else {
-                        notification.error(r.data.message);
-                    }
-                })
-                .catch(function (e) {
-                    notification.error(e);
-                })
-                .finally(function () {
-                    document.querySelector('.loading-box').style.display = "none";
-                });
-        });
-    });
-}
-
-  separateInit() {
-    this.separateClick();
-    this.confirmSeparateItemClick();
-  }
-
     changeAddressClick() {
         if (document.querySelector(".jsChangeAddress") == null) return;
 
@@ -673,7 +560,6 @@ export default class Checkout {
     this.removeCouponCode();
     this.changeShippingMethod();
     this.changeCartItem();
-    this.separateInit();
     this.changeAddressClick();
     this.addNewAddress();
     this.showHideSubscription();

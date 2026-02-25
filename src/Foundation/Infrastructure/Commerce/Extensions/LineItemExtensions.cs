@@ -3,65 +3,64 @@ using EPiServer.Commerce.Reporting.Order.ReportingModels;
 using EPiServer.SpecializedProperties;
 
 
-namespace Foundation.Infrastructure.Commerce.Extensions
+namespace Foundation.Infrastructure.Commerce.Extensions;
+
+public static class LineItemExtensions
 {
-    public static class LineItemExtensions
+    private static readonly Lazy<ReferenceConverter> _referenceConverter =
+        new Lazy<ReferenceConverter>(() => ServiceLocator.Current.GetInstance<ReferenceConverter>());
+
+    private static readonly Lazy<IContentLoader> _contentLoader =
+        new Lazy<IContentLoader>(() => ServiceLocator.Current.GetInstance<IContentLoader>());
+
+    private static readonly Lazy<ThumbnailUrlResolver> _thumbnailUrlResolver =
+        new Lazy<ThumbnailUrlResolver>(() => ServiceLocator.Current.GetInstance<ThumbnailUrlResolver>());
+
+    private static readonly Lazy<IHttpContextAccessor> _httpContextAccessor =
+        new Lazy<IHttpContextAccessor>(() => ServiceLocator.Current.GetInstance<IHttpContextAccessor>());
+
+    public static string GetUrl(this ILineItem lineItem) => lineItem.GetEntryContent()?.GetUrl();
+
+    public static string GetFullUrl(this ILineItem lineItem)
     {
-        private static readonly Lazy<ReferenceConverter> _referenceConverter =
-            new Lazy<ReferenceConverter>(() => ServiceLocator.Current.GetInstance<ReferenceConverter>());
+        var rightUrl = lineItem.GetUrl();
+        var baseUrl = _httpContextAccessor.Value.HttpContext.Request.PathBase;
+        return new Uri(new Uri(baseUrl), rightUrl).ToString();
+    }
 
-        private static readonly Lazy<IContentLoader> _contentLoader =
-            new Lazy<IContentLoader>(() => ServiceLocator.Current.GetInstance<IContentLoader>());
+    public static string GetThumbnailUrl(this ILineItem lineItem) => GetThumbnailUrl(lineItem.Code);
 
-        private static readonly Lazy<ThumbnailUrlResolver> _thumbnailUrlResolver =
-            new Lazy<ThumbnailUrlResolver>(() => ServiceLocator.Current.GetInstance<ThumbnailUrlResolver>());
-
-        private static readonly Lazy<IHttpContextAccessor> _httpContextAccessor =
-            new Lazy<IHttpContextAccessor>(() => ServiceLocator.Current.GetInstance<IHttpContextAccessor>());
-
-        public static string GetUrl(this ILineItem lineItem) => lineItem.GetEntryContent()?.GetUrl();
-
-        public static string GetFullUrl(this ILineItem lineItem)
+    private static string GetThumbnailUrl(string code)
+    {
+        var content = GetEntryContent<EntryContentBase>(code);
+        if (content == null)
         {
-            var rightUrl = lineItem.GetUrl();
-            var baseUrl = _httpContextAccessor.Value.HttpContext.Request.PathBase;
-            return new Uri(new Uri(baseUrl), rightUrl).ToString();
+            return string.Empty;
         }
 
-        public static string GetThumbnailUrl(this ILineItem lineItem) => GetThumbnailUrl(lineItem.Code);
+        return _thumbnailUrlResolver.Value.GetThumbnailUrl(content, "thumbnail");
+    }
 
-        private static string GetThumbnailUrl(string code)
+    public static T GetEntryContent<T>(string code) where T : EntryContentBase
+    {
+        var entryContentLink = _referenceConverter.Value.GetContentLink(code);
+        if (ContentReference.IsNullOrEmpty(entryContentLink))
         {
-            var content = GetEntryContent<EntryContentBase>(code);
-            if (content == null)
-            {
-                return string.Empty;
-            }
-
-            return _thumbnailUrlResolver.Value.GetThumbnailUrl(content, "thumbnail");
+            return null;
         }
 
-        public static T GetEntryContent<T>(string code) where T : EntryContentBase
-        {
-            var entryContentLink = _referenceConverter.Value.GetContentLink(code);
-            if (ContentReference.IsNullOrEmpty(entryContentLink))
-            {
-                return null;
-            }
+        return _contentLoader.Value.Get<T>(entryContentLink);
+    }
 
-            return _contentLoader.Value.Get<T>(entryContentLink);
-        }
+    public static EntryContentBase GetEntryContentBase(this ILineItem lineItem) => GetEntryContent<EntryContentBase>(lineItem.Code);
 
-        public static EntryContentBase GetEntryContentBase(this ILineItem lineItem) => GetEntryContent<EntryContentBase>(lineItem.Code);
+    public static EntryContentBase GetEntryContentBase(this LineItemReportingModel lineItem) => GetEntryContent<EntryContentBase>(lineItem.LineItemCode);
 
-        public static EntryContentBase GetEntryContentBase(this LineItemReportingModel lineItem) => GetEntryContent<EntryContentBase>(lineItem.LineItemCode);
+    public static T GetEntryContent<T>(this ILineItem lineItem) where T : EntryContentBase => GetEntryContent<T>(lineItem.Code);
 
-        public static T GetEntryContent<T>(this ILineItem lineItem) where T : EntryContentBase => GetEntryContent<T>(lineItem.Code);
-
-        public static ContentReference GetContentReference(this LinkItem linkItem)
-        {
-            var guid = PermanentLinkUtility.GetGuid(new UrlBuilder(linkItem.GetMappedHref()), out _);
-            return PermanentLinkUtility.FindContentReference(guid);
-        }
+    public static ContentReference GetContentReference(this LinkItem linkItem)
+    {
+        var guid = PermanentLinkUtility.GetGuid(new UrlBuilder(linkItem.GetMappedHref()), out _);
+        return PermanentLinkUtility.FindContentReference(guid);
     }
 }

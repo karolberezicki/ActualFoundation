@@ -1,12 +1,11 @@
-namespace Foundation.Infrastructure.Commerce.Customer
+namespace Foundation.Infrastructure.Commerce.Customer;
+
+public enum CustomerTiers
 {
-    public enum CustomerTiers
-    {
-        Classic,
-        Bronze,
-        Silver,
-        Gold,
-        Platinum,
-        Diamond
-    }
+    Classic,
+    Bronze,
+    Silver,
+    Gold,
+    Platinum,
+    Diamond
 }

@@ -1,10 +1,9 @@
-﻿namespace Foundation.Features.Stores
+﻿namespace Foundation.Features.Stores;
+
+public interface IStoreService
 {
-    public interface IStoreService
-    {
-        List<StoreItemViewModel> GetEntryStoresViewModels(string entryCode);
-        List<StoreItemViewModel> GetAllStoreViewModels();
-        StoreItemViewModel GetCurrentStoreViewModel();
-        bool SetCurrentStore(string storeCode);
-    }
+    List<StoreItemViewModel> GetEntryStoresViewModels(string entryCode);
+    List<StoreItemViewModel> GetAllStoreViewModels();
+    StoreItemViewModel GetCurrentStoreViewModel();
+    bool SetCurrentStore(string storeCode);
 }

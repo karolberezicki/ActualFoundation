@@ -3,32 +3,31 @@ using Foundation.Infrastructure.Cms.Settings;
 using Mediachase.Commerce.Orders;
 using Mediachase.Commerce.Security;
 
-namespace Foundation.Features.MyAccount.SubscriptionHistory
+namespace Foundation.Features.MyAccount.SubscriptionHistory;
+
+public class SubscriptionHistoryController : PageController<SubscriptionHistoryPage>
 {
-    public class SubscriptionHistoryController : PageController<SubscriptionHistoryPage>
+    private readonly ISettingsService _settingsService;
+
+    public SubscriptionHistoryController(ISettingsService settingsService)
     {
-        private readonly ISettingsService _settingsService;
+        _settingsService = settingsService;
+    }
 
-        public SubscriptionHistoryController(ISettingsService settingsService)
+    public ActionResult Index(SubscriptionHistoryPage currentPage)
+    {
+        var paymentPlans = OrderContext.Current.LoadByCustomerId<PaymentPlan>(PrincipalInfo.CurrentPrincipal.GetContactId())
+            .OrderBy(x => x.Created)
+            .ToList();
+
+        var viewModel = new SubscriptionHistoryViewModel(currentPage)
         {
-            _settingsService = settingsService;
-        }
+            CurrentContent = currentPage,
+            PaymentPlans = paymentPlans
+        };
 
-        public ActionResult Index(SubscriptionHistoryPage currentPage)
-        {
-            var paymentPlans = OrderContext.Current.LoadByCustomerId<PaymentPlan>(PrincipalInfo.CurrentPrincipal.GetContactId())
-                .OrderBy(x => x.Created)
-                .ToList();
+        viewModel.PaymentPlanDetailsPageUrl = UrlResolver.Current.GetUrl(_settingsService.GetSiteSettings<ReferencePageSettings>()?.PaymentPlanDetailsPage ?? ContentReference.StartPage);
 
-            var viewModel = new SubscriptionHistoryViewModel(currentPage)
-            {
-                CurrentContent = currentPage,
-                PaymentPlans = paymentPlans
-            };
-
-            viewModel.PaymentPlanDetailsPageUrl = UrlResolver.Current.GetUrl(_settingsService.GetSiteSettings<ReferencePageSettings>()?.PaymentPlanDetailsPage ?? ContentReference.StartPage);
-
-            return View(viewModel);
-        }
+        return View(viewModel);
     }
 }

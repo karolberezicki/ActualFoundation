@@ -1,28 +1,27 @@
-﻿namespace Foundation.Features.Blocks.CarouselBlock
+﻿namespace Foundation.Features.Blocks.CarouselBlock;
+
+public class CarouselBlockViewModel : BlockViewModel<CarouselBlock>
 {
-    public class CarouselBlockViewModel : BlockViewModel<CarouselBlock>
+    public CarouselBlockViewModel(CarouselBlock currentBlock) : base(currentBlock)
     {
-        public CarouselBlockViewModel(CarouselBlock currentBlock) : base(currentBlock)
-        {
-            Items = new List<CarouselItem>();
-        }
-
-        public List<CarouselItem> Items { get; set; }
+        Items = new List<CarouselItem>();
     }
 
-    public class CarouselItem
-    {
-        public CarouselImage CarouselImage { get; set; }
-        public IBlockViewModel<HeroBlock.HeroBlock> HeroBlock { get; set; }
+    public List<CarouselItem> Items { get; set; }
+}
 
-        public IBlockViewModel<ContainerBlock.ContainerBlock> ContainerBlock { get; set; }
-    }
+public class CarouselItem
+{
+    public CarouselImage CarouselImage { get; set; }
+    public IBlockViewModel<HeroBlock.HeroBlock> HeroBlock { get; set; }
 
-    public class CarouselImage
-    {
-        public string Heading { get; set; }
-        public string Description { get; set; }
-        public ContentReference Image { get; set; }
-        public ContentReference ItemURL { get; set; }
-    }
+    public IBlockViewModel<ContainerBlock.ContainerBlock> ContainerBlock { get; set; }
+}
+
+public class CarouselImage
+{
+    public string Heading { get; set; }
+    public string Description { get; set; }
+    public ContentReference Image { get; set; }
+    public ContentReference ItemURL { get; set; }
 }
