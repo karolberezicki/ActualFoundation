@@ -1,5 +1,6 @@
 ﻿using EPiServer.Framework;
 using EPiServer.Framework.Initialization;
+using Foundation.Features.UltimateFind;
 using Foundation.Infrastructure.Cms.ModelBinders;
 using Foundation.Infrastructure.Cms.Settings;
 using Foundation.Infrastructure.Cms.Users;
@@ -19,6 +20,7 @@ public class Initialize : IConfigurableModule
         context.Services.AddSingleton<IUserService, UserService>();
         context.Services.AddTransient<ICookieService, CookieService>();
         context.Services.AddSingleton<ISettingsService, SettingsService>();
+        context.Services.AddTransient<IUltimateFindService, UltimateFindService>();
     }
 
     void IInitializableModule.Initialize(InitializationEngine context)
